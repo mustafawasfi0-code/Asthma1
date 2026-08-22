@@ -20,7 +20,7 @@ create table if not exists public.profiles (
   name text not null default 'New User' check (length(trim(name)) between 1 and 100),
   city text not null default 'Baghdad',
   age smallint not null default 18 check (age between 1 and 120),
-  sex text not null default 'Other' check (sex in ('Male', 'Female', 'Other')),
+  sex text not null default 'Male' check (sex in ('Male', 'Female')),
   height_cm numeric(5,2) not null default 170 check (height_cm between 50 and 250),
   personal_best_pef integer check (personal_best_pef between 1 and 1000),
   doctor_name text,
@@ -168,7 +168,7 @@ begin
   values (
     new.id,
     coalesce(nullif(trim(new.raw_user_meta_data ->> 'name'), ''), 'New User'),
-    'Baghdad', 18, 'Other', 170, 'patient'
+    'Baghdad', 18, 'Male', 170, 'patient'
   )
   on conflict (id) do nothing;
   return new;

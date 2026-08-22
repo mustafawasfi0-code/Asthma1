@@ -64,8 +64,8 @@ class HealthRepository {
     if (symptoms.isEmpty) {
       throw const FormatException('Select at least one symptom');
     }
-    if (severity < 0 || severity > 10) {
-      throw const FormatException('Severity must be between 0 and 10');
+    if (severity < 0 || severity > 5) {
+      throw const FormatException('Severity must be between 0 and 5');
     }
     final session = _session();
     await session.client.from('symptom_logs').insert({
@@ -101,7 +101,7 @@ class HealthRepository {
     required int severity,
     String? notes,
   }) async {
-    if (symptoms.isEmpty || severity < 0 || severity > 10) {
+    if (symptoms.isEmpty || severity < 0 || severity > 5) {
       throw const FormatException('Invalid symptom data');
     }
     final session = _session();

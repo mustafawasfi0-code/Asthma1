@@ -73,7 +73,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await AppState.instance.restartOnboarding();
     if (context.mounted) context.go('/onboarding');
   }
-
+Widget _actionPlan(BuildContext context) => _pressable(
+    key: const ValueKey('home_pef'),
+    onTap: () => context.go('/monitoring?tab=symptoms'),
+    borderRadius: 28,
+    child: Container(
+      height: 172,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF16E1AF), Color(0xFF00BE13)],
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x2B00A73C),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          PositionedDirectional(
+            end: -35,
+            top: -46,
+            child: Container(
+              width: 145,
+              height: 145,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .10),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            start: -38,
+            bottom: -62,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.health_and_safety_outlined,
+                color: Colors.white,
+                size: 36,
+              ),
+              const Spacer(),
+              Text(
+                appText('Daily Check', 'الفحص اليومي'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  height: 1.15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                       appText('Daily checking of your health', 'الفحص اليومي لصحتك'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 15,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -110,23 +204,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 20),
                           _actionPlan(context),
                           const SizedBox(height: 22),
-                          _medications(context, data),
-                          const SizedBox(height: 22),
-Row(
+                          Row(
   children: [
     Expanded(
       child: _gradientAction(
         context,
-        key: const ValueKey('home_pef'),
+        key: const ValueKey('home_action_plan'),
         colors: const [
           Color(0xFFFF5B00),
           Color(0xFFFF1808),
         ],
         iconColor: const Color(0xFFFF6B12),
-        icon: Icons.air,
-        title: appText('Daily Check', 'الفحص اليومي'),
-        subtitle: appText('Record reading', 'سجل قراءتك'),
-        onTap: () => context.go('/monitoring?tab=peak-flow'),
+        icon:  Icons.assignment_outlined,
+        title:  appText('Your Action Plan', 'خطة العمل الخاصة بك'),
+        subtitle: appText('Open action plan', 'افتح خطة العمل'),
+         onTap: () => context.go('/action-plan'),
       ),
     ),
     const SizedBox(width: 12),
@@ -142,51 +234,13 @@ Row(
         icon: Icons.monitor_heart_outlined,
         title: appText('Use inhaler', 'استخدام البخاخ'),
         subtitle: appText('Learn technique', 'تعلم الطريقة'),
-        onTap: () => context.go('/monitoring?tab=inhaler'),
+        onTap: () => context.go('/learn/inhaler-technique?tab=inhaler'),
       ),
     ),
   ],
 ),
-
-// 📍 المسافة الفاصلة بين الصفين
-const SizedBox(height: 16),
-
-// --- الصف الثاني (Symptoms & Triggers) ---
-Row(
-  children: [
-    Expanded(
-      child: _gradientAction(
-        context,
-        key: const ValueKey('home_symptoms'),
-        colors: const [
-          Color(0xFF00B4DB),
-          Color(0xFF0083B0),
-        ],
-        iconColor: const Color(0xFF004976),
-        icon: Icons.sick_outlined,
-        title: appText('Symptoms', 'الأعراض'),
-        subtitle: appText('Record symptoms', 'سجل الأعراض'),
-        onTap: () => context.go('/monitoring?tab=symptoms'),
-      ),
-    ),
-    const SizedBox(width: 12),
-    Expanded(
-      child: _gradientAction(
-        context,
-        key: const ValueKey('home_triggers'),
-        colors: const [
-          Color(0xFF11998E),
-          Color(0xFF38EF7D),
-        ],
-        iconColor: const Color(0xFF0A5C53),
-        icon: Icons.warning_amber_rounded,
-        title: appText('Triggers', 'المثيرات'),
-        subtitle: appText('Track triggers', 'تتبع المثيرات'),
-        onTap: () => context.go('/monitoring?tab=triggers'),
-      ),
-    ),
-  ],
-),
+                          const SizedBox(height: 22),
+                          _medications(context, data),
                           const SizedBox(height: 22),
                           _stats(data),
                           const SizedBox(height: 22),
@@ -296,103 +350,6 @@ Row(
       ],
     ),
   );
-
-  Widget _actionPlan(BuildContext context) => _pressable(
-    key: const ValueKey('home_action_plan'),
-    onTap: () => context.go('/action-plan'),
-    borderRadius: 28,
-    child: Container(
-      height: 172,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF16E1AF), Color(0xFF00BE13)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x2B00A73C),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          PositionedDirectional(
-            end: -35,
-            top: -46,
-            child: Container(
-              width: 145,
-              height: 145,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .10),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            start: -38,
-            bottom: -62,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .08),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.health_and_safety_outlined,
-                color: Colors.white,
-                size: 36,
-              ),
-              const Spacer(),
-              Text(
-                appText('Your Action Plan', 'خطة العمل الخاصة بك'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  height: 1.15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      appText('Open action plan', 'افتح خطة العمل'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 15,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
-
   void _openMedicationPicker(BuildContext context, List<Medication> medicines) {
     showModalBottomSheet<void>(
       context: context,
@@ -1008,7 +965,8 @@ Row(
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          cityText,
+                          arabic ? 'موقعك الحالي'
+                          : 'Current location',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

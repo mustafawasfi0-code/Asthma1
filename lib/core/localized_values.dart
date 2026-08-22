@@ -95,7 +95,6 @@ String localizedPersonName(String value) {
 const healthValueArabic = <String, String>{
   'Male': 'ذكر',
   'Female': 'أنثى',
-  'Other': 'آخر',
   'Family': 'العائلة',
   'Friend': 'صديق',
   'Doctor': 'طبيب',

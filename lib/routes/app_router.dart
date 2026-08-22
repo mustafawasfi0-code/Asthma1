@@ -56,18 +56,20 @@ final appRouter = GoRouter(
           _LanguageRefresh(builder: (_) => DashboardScreen()),
     ),
     GoRoute(
-      path: '/monitoring',
-      builder: (context, state) {
-        final initialTab = switch (state.uri.queryParameters['tab']) {
-          'symptoms' => 1,
-          'triggers' => 2,
-          _ => 0,
-        };
-        return _LanguageRefresh(
-          builder: (_) => MonitoringScreen(initialTab: initialTab),
-        );
-      },
-    ),
+  path: '/monitoring',
+  builder: (context, state) {
+    final tabParam = state.uri.queryParameters['tab'];
+    final initialTab = switch (tabParam) {
+      null => 0,        // no query param at all → bottom nav bar
+      'symptoms' => 1,
+      'triggers' => 2,
+      _ => 3,            // 'peak-flow', 'inhaler', or anything else
+    };
+    return _LanguageRefresh(
+      builder: (_) => MonitoringScreen(initialTab: initialTab),
+    );
+  },
+),
     GoRoute(
       path: '/monitoring/report',
       builder: (context, state) =>
@@ -131,6 +133,14 @@ final appRouter = GoRouter(
             MedicationDetailsScreen(code: state.pathParameters['code'] ?? ''),
       ),
     ),
+    GoRoute(
+  path: '/onboarding/medications/how-to-use/:index',
+  builder: (context, state) => _LanguageRefresh(
+    builder: (_) => MedicationHowToUseScreen(
+      index: int.tryParse(state.pathParameters['index'] ?? '') ?? 0,
+    ),
+  ),
+),
     GoRoute(
       path: '/reminders',
       builder: (context, state) =>

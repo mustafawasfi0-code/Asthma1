@@ -1,5 +1,6 @@
 import '../models/profile.dart';
 import '../services/supabase_service.dart';
+import '../repositories/profile_repository.dart';
 
 class ProfileRepository {
   Future<Profile?> getCurrent() async {

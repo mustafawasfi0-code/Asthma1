@@ -10,6 +10,7 @@ import '../repositories/profile_repository.dart';
 import '../services/supabase_service.dart';
 import '../widgets/common.dart';
 import '../repositories/health_repository.dart'; // أو حسب المسار الخاص بالملف لديك
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 /// Single progress scale shared by every onboarding screen so the bar reads
 /// as one continuous journey instead of resetting between sections.
@@ -83,7 +84,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final Map<String, String> localizedsex = const {
     'Male': 'ذكر',
     'Female': 'أنثى',
-    'Other': 'آخر',
   };
 
   @override
@@ -174,6 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           age: normalizedAge!,
           sex: sex!,
           heightCm: parsedHeight!,
+         personalBest: _estimatedPef(),   // ← add this lin
         ),
       );
       if (mounted) context.push('/onboarding/medications');
@@ -257,7 +258,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             DropdownButtonFormField<String>(
               initialValue: sex,
               decoration: InputDecoration(labelText: a ? 'الجنس' : 'sex'),
-              items: const ['Male', 'Female', 'Other']
+              items: const ['Male', 'Female']
                   .map(
                     (x) => DropdownMenuItem(
                       value: x,
@@ -510,15 +511,49 @@ class _MedicationSelectionScreenState
                       ],
                     ),
                   ),
-                  ...OnboardingMedicationState.instance.medications.map(
-                    (medication) => _MedicationChoice(
-                      medication: medication,
-                      selected: OnboardingMedicationState.instance.selectedCodes
-                          .contains(medication.code),
-                      onTap: () => OnboardingMedicationState.instance.toggle(
-                        medication.code,
-                      ),
-                    ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Card width = half the available width minus the
+                      // gap between columns. The image sits in a square
+                      // (AspectRatio 1) sized off this width, so its
+                      // height equals cardWidth. Text below needs a
+                      // roughly FIXED pixel amount regardless of screen
+                      // size (font sizes don't shrink with the screen),
+                      // so we reserve a fixed budget for it instead of
+                      // using a ratio — that's what was causing the
+                      // overflow on narrower devices.
+                      const crossAxisSpacing = 9.0;
+                      const textZoneHeight = 92.0;
+                      final cardWidth =
+                          (constraints.maxWidth - crossAxisSpacing) / 2;
+                      final tileHeight = cardWidth + textZoneHeight;
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: crossAxisSpacing,
+                          mainAxisSpacing: 9,
+                          mainAxisExtent: tileHeight,
+                        ),
+                        itemCount:
+                            OnboardingMedicationState.instance.medications.length,
+                        itemBuilder: (context, index) {
+                          final medication = OnboardingMedicationState
+                              .instance
+                              .medications[index];
+                          return _MedicationChoice(
+                            medication: medication,
+                            selected: OnboardingMedicationState
+                                .instance
+                                .selectedCodes
+                                .contains(medication.code),
+                            onTap: () => OnboardingMedicationState.instance
+                                .toggle(medication.code),
+                          );
+                        },
+                      );
+                    },
                   ),
                   if (error != null) _ErrorText(error!),
                   Text(
@@ -557,84 +592,98 @@ class _MedicationChoice extends StatelessWidget {
     ];
     final color = colors[(medication.sortOrder - 1) % colors.length];
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: selected ? const Color(0xFFEFF6FF) : Colors.white,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            color: selected ? const Color(0xFF1677F2) : const Color(0xFFE5E7EB),
-            width: selected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(16),
+    return Material(
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          color: selected ? color : color.withValues(alpha: 0.45),
+          width: selected ? 3.5 : 1.3,
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border(bottom: BorderSide(color: color, width: 4)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: medication.imagePath.isEmpty
-                          ? Icon(
-                              medication.isEmergency
-                                  ? Icons.medication_liquid_outlined
-                                  : Icons.medication_outlined,
-                              color: color,
-                              size: 31,
-                              )
-                          : Image.asset(
-                              medication.imagePath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(
-                                medication.isEmergency
-                                    ? Icons.medication_liquid_outlined
-                                    : Icons.medication_outlined,
-                                color: color,
-                                size: 31,
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        a ? medication.nameAr : medication.nameEn,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 17,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: 1, // square image area — scales with the card's
+              // own width instead of screen height, so it looks the same
+              // on every device (phones, tablets, foldables, desktops).
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                color: color.withValues(alpha: 0.08),
+                child: medication.imagePath.isEmpty
+                    ? Icon(
+                        medication.isEmergency
+                            ? Icons.medication_liquid_outlined
+                            : Icons.medication_outlined,
+                        color: color,
+                        size: 40,
+                      )
+                    : Image.asset(
+                        medication.imagePath,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          medication.isEmergency
+                              ? Icons.medication_liquid_outlined
+                              : Icons.medication_outlined,
+                          color: color,
+                          size: 40,
                         ),
                       ),
-                      Text(
-                        a
-                            ? medication.descriptionAr
-                            : medication.descriptionEn,
-                        style: const TextStyle(color: Color(0xFF6B7280)),
-                      ),
-                    ],
-                  ),
-                ),
-                Checkbox(value: selected, onChanged: (_) => onTap()),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(9, 7, 6, 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          a ? medication.nameAr : medication.nameEn,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        a ? Text(
+                         medication.A1,
+                        style: const TextStyle(color: Color(0xFF6B7280)),
+                      ) : const SizedBox.shrink(),
+                        Text(
+                          a
+                              ? medication.descriptionAr
+                              : medication.descriptionEn,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Checkbox(
+                    value: selected,
+                    onChanged: (_) => onTap(),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -662,25 +711,19 @@ class MedicationInfoScreen extends StatelessWidget {
     final nextMedication = hasNext ? selected[index + 1] : null;
 
     return _OnboardingFrame(
-      progress: _onboardingProgress(5, fraction: (index + 1) / selected.length),
-      icon: Icons.schedule_outlined,
-      title:
-          appText('Information about ', 'معلومات ') +
-          (a ? medication.nameAr : medication.nameEn),
-      subtitle: a ? medication.instructionsAr : medication.instructionsEn,
-      back: () => index == 0
-          ? context.pop()
-          : context.go('/onboarding/medications/info/${index - 1}'),
-      continueText: hasNext
-          ? appText(
-              'Next medicine (${index + 2} of ${selected.length})',
-              'الدواء التالي (${index + 2} من ${selected.length})',
-            )
-          : appText('Continue', 'استمرار'),
-      continueAction: () => hasNext
-          ? context.go('/onboarding/medications/info/${index + 1}')
-          : context.push('/onboarding/triggers'),
-      child: Column(
+  progress: _onboardingProgress(5, fraction: (index + 0.5) / selected.length),
+  icon: Icons.schedule_outlined,
+  title:
+      appText('Information about ', 'معلومات ') +
+      (a ? medication.nameAr : medication.nameEn),
+  subtitle: a ? medication.instructionsAr : medication.instructionsEn,
+  back: () => index == 0
+      ? context.pop()
+      : context.go('/onboarding/medications/info/${index - 1}'),
+  continueText: appText('Continue', 'استمرار'),
+  continueAction: () =>
+      context.push('/onboarding/medications/how-to-use/$index'),
+  child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (selected.length > 1) ...[
@@ -765,7 +808,242 @@ class MedicationInfoScreen extends StatelessWidget {
     );
   }
 }
+class MedicationHowToUseScreen extends StatefulWidget {
+  const MedicationHowToUseScreen({super.key, required this.index});
+  final int index;
 
+  @override
+  State<MedicationHowToUseScreen> createState() =>
+      _MedicationHowToUseScreenState();
+}
+
+class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
+  YoutubePlayerController? _videoController;
+  String? _controllerForUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupController();
+  }
+
+  @override
+  void didUpdateWidget(covariant MedicationHowToUseScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _setupController();
+    }
+  }
+
+  void _setupController() {
+    final selected = OnboardingMedicationState.instance.selectedMedications;
+    if (widget.index < 0 || widget.index >= selected.length) return;
+
+    final url = selected[widget.index].videoUrl;
+
+    if (url == null || url.isEmpty) {
+      _videoController?.dispose();
+      _videoController = null;
+      _controllerForUrl = null;
+      return;
+    }
+
+    if (_controllerForUrl == url && _videoController != null) {
+      return; // already set up correctly, don't recreate
+    }
+
+    final id = YoutubePlayer.convertUrlToId(url);
+    _videoController?.dispose();
+    _videoController = id == null
+        ? null
+        : YoutubePlayerController(
+            initialVideoId: id,
+            flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
+          );
+    _controllerForUrl = url;
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = OnboardingMedicationState.instance.selectedMedications;
+    if (selected.isEmpty ||
+        widget.index < 0 ||
+        widget.index >= selected.length) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => context.go('/onboarding/triggers'),
+      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final medication = selected[widget.index];
+    final a = AppState.instance.arabic;
+    final steps = a ? medication.stepsAr : medication.stepsEn;
+    final hasNext = widget.index + 1 < selected.length;
+    final controller = _videoController;
+
+    return _OnboardingFrame(
+      progress: _onboardingProgress(
+        5,
+        fraction: (widget.index + 1) / selected.length,
+      ),
+      icon: Icons.menu_book_outlined,
+      title: appText('How to use', 'طريقة الاستخدام'),
+      subtitle: appText(
+        'Watch the video and follow the steps to ensure effective treatment.',
+        'شاهد الفيديو واتبع الخطوات لضمان فعالية العلاج.',
+      ),
+      back: () => context.pop(),
+      continueText: hasNext
+          ? appText('Next Medication', 'الدواء التالي')
+          : appText('Continue', 'استمرار'),
+      continueAction: () => hasNext
+          ? context.go('/onboarding/medications/info/${widget.index + 1}')
+          : context.push('/onboarding/triggers'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (selected.length > 1) ...[
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Text(
+                appText(
+                  'Medicine ${widget.index + 1} of ${selected.length}',
+                  'الدواء ${widget.index + 1} من ${selected.length}',
+                ),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF0969E8),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: controller == null
+                  ? _videoPlaceholder()
+                  : YoutubePlayer(
+                      controller: controller,
+                      showVideoProgressIndicator: true,
+                    ),
+            ),
+          ),
+          if (steps.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.check_circle,
+                    color: Color(0xFF16A34A), size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  appText('Key Steps', 'الخطوات الأساسية'),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < steps.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: i == steps.length - 1 ? 0 : 12,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${i + 1}.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: i == 0
+                                  ? const Color(0xFF111827)
+                                  : const Color(0xFF9CA3AF),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              steps[i],
+                              style: TextStyle(
+                                height: 1.4,
+                                color: i == 0
+                                    ? const Color(0xFF111827)
+                                    : const Color(0xFF6B7280),
+                                fontWeight: i == 0
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      appText('All steps shown', 'تم عرض جميع الخطوات'),
+                      style: const TextStyle(
+                        color: Color(0xFF16A34A),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _videoPlaceholder() => Container(
+        color: const Color(0xFF111827),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.play_circle_outline,
+                color: Colors.white54, size: 44),
+            const SizedBox(height: 8),
+            Text(
+              appText('Video unavailable', 'الفيديو غير متاح'),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+}
 class EmergencyContactScreen extends StatefulWidget {
   const EmergencyContactScreen({super.key, this.onboarding = true});
   final bool onboarding;
@@ -1247,7 +1525,7 @@ class _TriggersScreenState extends State<TriggersScreen> {
   } catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appText('Failed to save triggers', 'فشل حفظ المثيرات'))),
+        SnackBar(content: Text(appText('Failed to save triggers', 'فشل حفظ مهيجات الربو'))),
       );
     }
   } finally {
@@ -1261,10 +1539,10 @@ class _TriggersScreenState extends State<TriggersScreen> {
     return _OnboardingFrame(
       progress: _onboardingProgress(6),
       icon: Icons.warning_amber_rounded,
-      title: appText('Asthma Triggers', 'مثيرات الربو'),
+      title: appText('Asthma Triggers', 'مهيجات الربو'),
       subtitle: appText(
         'Select the triggers that usually excite or worsen your asthma symptoms.',
-        'حدد العوامل والمثيرات التي تحفّز نوبات أو أعراض الربو لديك عادةً.',
+        'حدد عوامل مهيجات الربو التي تحفّز نوبات أو أعراض الربو لديك عادةً.',
       ),
       back: () => context.pop(),
       continueAction: _continue,
@@ -1340,7 +1618,7 @@ class _TriggersScreenState extends State<TriggersScreen> {
           TextField(
             controller: _customController,
             decoration: InputDecoration(
-              hintText: a ? 'أضف مثيراً آخر' : 'Add another trigger',
+              hintText: a ? 'أضف مهيج ربو آخر' : 'Add another trigger',
               prefixIcon: const Icon(Icons.add, color: Color(0xFF6B7280)),
               filled: true,
               fillColor: Colors.white,

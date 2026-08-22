@@ -209,7 +209,6 @@ class _TechniqueScreenState extends State<TechniqueScreen> {
     try {
       final highest = values.whereType<int>().reduce((a, b) => a > b ? a : b);
       await HealthRepository().addPeakFlow(highest);
-      await ProfileRepository().updatePersonalBest(highest);
       for (final controller in readings) {
         controller.clear();
       }

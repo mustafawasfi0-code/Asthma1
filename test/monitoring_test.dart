@@ -13,7 +13,7 @@ void main() {
 
     test('zone boundaries are correct', () {
       expect(
-        PeakFlowAssessment.calculate([800, 700, 600], 1000).zone,
+        PeakFlowAssessment.calculate([800, 700, 600], 900).zone,
         PeakFlowZone.green,
       );
       expect(

@@ -27,13 +27,17 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   final symptomNote = TextEditingController();
   final customTrigger = TextEditingController();
   final pageScroll = ScrollController();
-  late int tab;
-  double severity = 0;
+
+  // Page flow: 0 = symptoms, 1 = triggers, 2 = peak flow.
+  late int pageIndex;
+  late final PageController _flowController;
+
   bool saving = false, loading = true;
   bool _showForm = false;
   String? error;
   int? currentPersonalBest;
   final selectedSymptoms = <String>{};
+  final Map<String, double> symptomSeverities = {};
   final selectedTriggers = <String>{};
   List<Map<String, dynamic>> peakLogs = [], symptomLogs = [], triggerLogs = [];
 
@@ -60,7 +64,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   @override
   void initState() {
     super.initState();
-    tab = widget.initialTab;
+    pageIndex = _mapInitialTab(widget.initialTab);
+    _flowController = PageController(initialPage: pageIndex);
     final preview = widget.previewReadings;
     if (preview != null && preview.length == 3) {
       for (var index = 0; index < 3; index++) {
@@ -72,11 +77,24 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     }
   }
 
+  // `initialTab` keeps its old meaning (0 = peak flow / default,
+  // 1 = symptoms, 2 = triggers) so app_router.dart and the Home screen's
+  // quick-action buttons don't need to change. This just maps that old
+  // index onto the new page order.
+ int _mapInitialTab(int oldTab) => switch (oldTab) {
+  1 => 0, // symptoms (explicit ?tab=symptoms)
+  2 => 1, // triggers (explicit ?tab=triggers)
+  3 => 2, // peak flow (explicit ?tab=peak-flow or ?tab=inhaler)
+  _ => 0, // no param at all — bottom nav bar → start at Symptoms
+};
+
   @override
   void didUpdateWidget(covariant MonitoringScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialTab != widget.initialTab) {
-      setState(() => tab = widget.initialTab);
+      final newIndex = _mapInitialTab(widget.initialTab);
+      setState(() => pageIndex = newIndex);
+      _flowController.jumpToPage(newIndex);
     }
   }
 
@@ -88,6 +106,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     symptomNote.dispose();
     customTrigger.dispose();
     pageScroll.dispose();
+    _flowController.dispose();
     super.dispose();
   }
 
@@ -124,14 +143,16 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     }
   }
 
-  Future<void> _save(Future<void> Function() action) async {
-    if (saving) return;
+  Future<bool> _save(Future<void> Function() action) async {
+    if (saving) return false;
     setState(() => saving = true);
     try {
       await action();
       await _refresh();
+      return true;
     } on FormatException catch (e) {
       _message(e.message);
+      return false;
     } catch (_) {
       _message(
         appText(
@@ -139,10 +160,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           'تعذر الحفظ. تحقق من الاتصال.',
         ),
       );
+      return false;
     } finally {
       if (mounted) setState(() => saving = false);
     }
   }
+
   void _message(String text) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -158,6 +181,28 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
 
   List<String> _list(dynamic value) =>
       value is List ? value.map((e) => e.toString()).toList() : <String>[];
+
+  // --- Page flow navigation -------------------------------------------
+
+  void _goNext() {
+    if (pageIndex < 2) {
+      _flowController.nextPage(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _goBack() {
+    if (pageIndex > 0) {
+      _flowController.previousPage(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _skip() => _goNext();
 
   @override
   Widget build(BuildContext context) => Directionality(
@@ -193,29 +238,33 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         ],
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refresh,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: SingleChildScrollView(
-                controller: pageScroll,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
-                child: Column(
-                  children: [
-                    _tabs(),
-                    const SizedBox(height: 24),
-                    if (error != null) _errorCard(),
-                    if (tab == 0)
-                      _pefTab()
-                    else if (tab == 1)
-                      _symptomsTab()
-                    else
-                      _triggersTab(),
-                  ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                  child: _stepProgress(),
                 ),
-              ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                    child: _errorCard(),
+                  ),
+                Expanded(
+                  child: PageView(
+                    controller: _flowController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (index) => setState(() => pageIndex = index),
+                    children: [
+                      _symptomsPage(),
+                      _triggersPage(),
+                      _pefPage(),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -224,49 +273,57 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     ),
   );
 
-  Widget _tabs() => Container(
-    height: 56,
-    padding: const EdgeInsets.all(5),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFE3E8EF)),
-    ),
-    child: Row(
-      children: List.generate(3, (i) {
-        final labels = [
-          appText('Peak Flow', 'تدفق النفس'),
-          appText('Symptoms', 'الأعراض'),
-          appText('Triggers', 'المثيرات'),
-        ];
-        return Expanded(
-          child: InkWell(
-            key: ValueKey('monitoring_tab_$i'),
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => tab = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: tab == i ? const Color(0xFFDCEEFF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                labels[i],
-                style: TextStyle(
-                  color: tab == i ? const Color(0xFF006DD7) : AppColors.muted,
-                  fontSize: 16,
-                  fontWeight: tab == i ? FontWeight.w800 : FontWeight.w500,
+  Widget _stepProgress() {
+    final labels = [
+      appText('Symptoms', 'الأعراض'),
+      appText('Triggers', 'مهيجات الربو'),
+      appText('Peak Flow', 'تدفق النفس'),
+    ];
+    return Column(
+      children: [
+        Row(
+          children: List.generate(3, (i) {
+            final reached = i <= pageIndex;
+            return Expanded(
+              child: Container(
+                margin: EdgeInsetsDirectional.only(end: i < 2 ? 6 : 0),
+                height: 5,
+                decoration: BoxDecoration(
+                  color: reached
+                      ? const Color(0xFF087CF0)
+                      : const Color(0xFFE3E8EF),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
-            ),
-          ),
-        );
-      }),
-    ),
-  );
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: List.generate(3, (i) {
+            final active = i == pageIndex;
+            return Expanded(
+              child: Text(
+                labels[i],
+                textAlign: i == 0
+                    ? TextAlign.start
+                    : i == 2
+                    ? TextAlign.end
+                    : TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+                  color: active ? const Color(0xFF087CF0) : AppColors.muted,
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
   Widget _errorCard() => Container(
-    margin: const EdgeInsets.only(bottom: 16),
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
       color: const Color(0xFFFFF1F1),
@@ -286,36 +343,294 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     ),
   );
 
-  Widget _pefTab() => Column(
-    children: [
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+  // --- Symptoms page -----------------------------------------------------
+
+  Widget _symptomsPage() => SingleChildScrollView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+    child: Column(
+      children: [
+        _sectionHeader(
+          Icons.sick_outlined,
+          appText('Symptoms', 'الأعراض'),
+          appText('Record how you feel', 'سجل حالتك الصحية'),
+        ),
+        const SizedBox(height: 18),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appText('Select your symptoms', 'اختر الأعراض التي لديك'),
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              _symptomChoiceWrap(),
+              if (selectedSymptoms.isNotEmpty) ...[
+                const SizedBox(height: 20),
                 Text(
-                  appText('Peak Flow', 'ذروة التدفق'),
+                  appText('Rate each symptom', 'قيّم كل عرض'),
                   style: const TextStyle(
-                    color: Color(0xFF080D18),
-                    fontSize: 27,
-                    height: 1.1,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  appText('Monitor lung function', 'راقب وظائف الرئة'),
-                  style: const TextStyle(
-                    color: Color(0xFF626A76),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 10),
+                ...selectedSymptoms.map(
+                  (symptomKey) => _emojiSeverityScale(
+                    label: AppState.instance.arabic
+                        ? (symptoms[symptomKey] ?? symptomKey)
+                        : symptomKey,
+                    value: symptomSeverities[symptomKey] ?? 0,
+                    onChanged: (v) =>
+                        setState(() => symptomSeverities[symptomKey] = v),
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: symptomNote,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: appText('Optional note', 'ملاحظة اختيارية'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              PrimaryButton(
+                key: const ValueKey('save_symptoms'),
+                text: appText('Save & Continue', 'حفظ ومتابعة'),
+                onPressed: saving || selectedSymptoms.isEmpty
+                    ? null
+                    : _saveSymptoms,
+              ),
+            ],
           ),
-          Material(
+        ),
+        _logTitle(appText('Symptom history', 'سجل الأعراض')),
+        _logs(
+          symptomLogs,
+          _symptomRow,
+          onDelete: repository.deleteSymptom,
+          onEdit: _editSymptom,
+        ),
+      ],
+    ),
+  );
+
+  Widget _symptomChoiceWrap() => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: symptoms.entries.map((e) {
+      final active = selectedSymptoms.contains(e.key);
+      return FilterChip(
+        selected: active,
+        label: Text(AppState.instance.arabic ? e.value : e.key),
+        onSelected: (_) => setState(() {
+          if (active) {
+            selectedSymptoms.remove(e.key);
+            symptomSeverities.remove(e.key);
+          } else {
+            selectedSymptoms.add(e.key);
+            symptomSeverities[e.key] = 0;
+          }
+        }),
+        selectedColor: const Color(0xFFDCEEFF),
+        checkmarkColor: const Color(0xFF087CF0),
+      );
+    }).toList(),
+  );
+
+  Widget _emojiSeverityScale({
+    required String label,
+    required double value,
+    required ValueChanged<double> onChanged,
+  }) {
+    const emojis = ['😄', '🙂', '😐', '😕', '😣', '😫'];
+    const colors = [
+      Color(0xFF00C853), // 0 - good (green)
+      Color(0xFF64DD17),
+      Color(0xFFFFD600),
+      Color(0xFFFF9100),
+      Color(0xFFFF3D00),
+      Color(0xFFD50000), // 5 - bad (red)
+    ];
+    final index = value.round().clamp(0, 5);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Text(emojis[index], style: const TextStyle(fontSize: 24)),
+            ],
+          ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  gradient: const LinearGradient(colors: colors),
+                ),
+              ),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 8,
+                  activeTrackColor: Colors.transparent,
+                  inactiveTrackColor: Colors.transparent,
+                  thumbColor: colors[index],
+                  overlayColor: colors[index].withValues(alpha: .2),
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 11),
+                ),
+                child: Slider(
+                  value: value,
+                  min: 0,
+                  max: 5,
+                  divisions: 5,
+                  onChanged: onChanged,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveSymptoms() async {
+    final success = await _save(() async {
+      for (final symptom in selectedSymptoms) {
+        await repository.addSymptomLog(
+          symptoms: [symptom],
+          severity: (symptomSeverities[symptom] ?? 0).round(),
+          notes: symptomNote.text,
+        );
+      }
+      selectedSymptoms.clear();
+      symptomSeverities.clear();
+      symptomNote.clear();
+      if (mounted) setState(() {});
+    });
+    if (success) _goNext();
+  }
+
+  // --- Triggers page -------------------------------------------------
+
+  Widget _triggersPage() => SingleChildScrollView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+    child: Column(
+      children: [
+        _sectionHeader(
+          Icons.warning_amber_rounded,
+          appText('Triggers', 'مهيجات الربو'),
+          appText('Record what triggered symptoms', 'سجل مسببات الأعراض'),
+        ),
+        const SizedBox(height: 18),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appText('Select triggers', 'اختر مهيجات الربو'),
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              _choiceWrap(triggers, selectedTriggers),
+              const SizedBox(height: 16),
+              TextField(
+                key: const ValueKey('custom_trigger'),
+                controller: customTrigger,
+                decoration: InputDecoration(
+                  labelText: appText('Add another trigger', 'أضف مهيج الربو آخر'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              PrimaryButton(
+                key: const ValueKey('save_triggers'),
+                text: appText('Save & Continue', 'حفظ ومتابعة'),
+                onPressed: saving ? null : _saveTriggers,
+              ),
+            ],
+          ),
+        ),
+        _logTitle(appText('Trigger history', 'سجل مهيجات الربو')),
+        _logs(
+          triggerLogs,
+          _triggerRow,
+          onDelete: repository.deleteTrigger,
+          onEdit: _editTrigger,
+        ),
+      ],
+    ),
+  );
+
+  Widget _choiceWrap(Map<String, String> choices, Set<String> selected) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: choices.entries.map((e) {
+      final active = selected.contains(e.key);
+      return FilterChip(
+        selected: active,
+        label: Text(AppState.instance.arabic ? e.value : e.key),
+        onSelected: (_) => setState(
+          () => active ? selected.remove(e.key) : selected.add(e.key),
+        ),
+        selectedColor: const Color(0xFFDCEEFF),
+        checkmarkColor: const Color(0xFF087CF0),
+      );
+    }).toList(),
+  );
+
+  Future<void> _saveTriggers() async {
+    final List<String> values = [...selectedTriggers];
+    if (customTrigger.text.trim().isNotEmpty) {
+      values.add(customTrigger.text.trim());
+    }
+
+    if (values.isEmpty) return;
+
+    final success = await _save(() async {
+      await repository.addTriggersLog(triggers: values);
+      selectedTriggers.clear();
+      customTrigger.clear();
+      if (mounted) setState(() {});
+    });
+    if (success) _goNext();
+  }
+
+  // --- Peak flow page --------------------------------------------------
+
+  Widget _pefPage() => SingleChildScrollView(
+    controller: pageScroll,
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+    child: Column(
+      children: [
+        _sectionHeader(
+          Icons.air,
+          appText('Peak Flow', 'ذروة التدفق'),
+          appText('Monitor lung function', 'راقب وظائف الرئة'),
+          trailing: Material(
             color: const Color(0xFF087CF0),
             shape: const CircleBorder(),
             elevation: 5,
@@ -335,180 +650,180 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
               ),
             ),
           ),
-        ],
-      ),
-      const SizedBox(height: 14),
-      if (_showForm) ...[
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(15, 16, 15, 15),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE8EDF2)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x12101828),
-                blurRadius: 14,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appText('Record a peak flow reading', 'سجل قراءة ذروة التدفق'),
-                style: const TextStyle(
-                  color: Color(0xFF10131A),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
+        ),
+        const SizedBox(height: 14),
+        if (_showForm) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(15, 16, 15, 15),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE8EDF2)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x12101828),
+                  blurRadius: 14,
+                  offset: Offset(0, 5),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                appText(
-                  'Enter 3 readings - the highest will be saved',
-                  'أدخل 3 قراءات - سيتم حفظ الأعلى',
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appText('Record a peak flow reading', 'سجل قراءة ذروة التدفق'),
+                  style: const TextStyle(
+                    color: Color(0xFF10131A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                style: const TextStyle(
-                  color: Color(0xFF69717D),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 3),
+                Text(
+                  appText(
+                    'Enter 3 readings - the highest will be saved',
+                    'أدخل 3 قراءات - سيتم حفظ الأعلى',
+                  ),
+                  style: const TextStyle(
+                    color: Color(0xFF69717D),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              for (var index = 0; index < 3; index++) ...[
+                const SizedBox(height: 12),
+                for (var index = 0; index < 3; index++) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.content_paste_outlined,color: Color(0xFF8B7154),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        appText('Reading ${index + 1}', 'القراءة ${index + 1}'),
+                        style: const TextStyle(
+                          color: Color(0xFF333943),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    height: 42,
+                    child: TextField(
+                      key: ValueKey('pef_reading_$index'),
+                      controller: readings[index],
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.start,
+                      style: const TextStyle(
+                        color: Color(0xFF0A0D12),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 8,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(11),
+                          borderSide: const BorderSide(color: Color(0xFFDDE2E8)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(11),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF087CF0),
+                            width: 1.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                ],
+                _highestPreview(),
+                const SizedBox(height: 11),
+                _zonesHelp(),
+                const SizedBox(height: 13),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.content_paste_outlined,color: Color(0xFF8B7154),
-                      size: 16,
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: OutlinedButton(
+                          key: const ValueKey('cancel_pef'),
+                          onPressed: () {
+                            setState(() {
+                              _showForm = false;
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF111318),
+                            side: const BorderSide(color: Color(0xFFCDD2D8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                          ),
+                          child: Text(
+                            appText('Cancel', 'إلغاء'),
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      appText('Reading ${index + 1}', 'القراءة ${index + 1}'),
-                      style: const TextStyle(
-                        color: Color(0xFF333943),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: FilledButton(
+                          key: const ValueKey('save_pef'),
+                          onPressed: saving ? null : () async {
+                            await _savePef();
+                            setState(() {_showForm = false;
+                            });
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF087CF0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                          ),
+                          child: Text(
+                            saving
+                                ? appText('Saving…', 'جارٍ الحفظ…')
+                                : appText('Save', 'حفظ'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                SizedBox(
-                  height: 42,
-                  child: TextField(
-                    key: ValueKey('pef_reading_$index'),
-                    controller: readings[index],
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.start,
-                    style: const TextStyle(
-                      color: Color(0xFF0A0D12),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 8,
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(11),
-                        borderSide: const BorderSide(color: Color(0xFFDDE2E8)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(11),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF087CF0),
-                          width: 1.4,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 9),
               ],
-              _highestPreview(),
-              const SizedBox(height: 11),
-              _zonesHelp(),
-              const SizedBox(height: 13),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: OutlinedButton(
-                        key: const ValueKey('cancel_pef'),
-                        onPressed: () {
-                          setState(() {
-                            _showForm = false;
-                          });
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF111318),
-                          side: const BorderSide(color: Color(0xFFCDD2D8)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                        ),
-                        child: Text(
-                          appText('Cancel', 'إلغاء'),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: FilledButton(
-                        key: const ValueKey('save_pef'),
-                        onPressed: saving ? null : () async {
-                          await _savePef();
-                          setState(() {_showForm = false;
-                          });
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF087CF0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                        ),
-                        child: Text(
-                          saving
-                              ? appText('Saving…', 'جارٍ الحفظ…')
-                              : appText('Save', 'حفظ'),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
+        ],
+        _logTitle(appText('Reading history', 'سجل القراءات')),
+        _logs(
+          peakLogs,
+          (row) => _peakRow(row),
+          onDelete: repository.deletePeakFlow,
+          onEdit: _editPeakFlow,
         ),
       ],
-      _logTitle(appText('Reading history', 'سجل القراءات')),
-      _logs(
-        peakLogs,
-        (row) => _peakRow(row),
-        onDelete: repository.deletePeakFlow,
-        onEdit: _editPeakFlow,
-      ),
-    ],
+    ),
   );
 
   Widget _highestPreview() {
@@ -691,142 +1006,21 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     ),
   );
 
-  Widget _symptomsTab() => Column(
+  // --- Shared header / logs / dialogs ------------------------------------
+
+  Widget _sectionHeader(
+    IconData icon,
+    String title,
+    String subtitle, {
+    Widget? trailing,
+  }) => Row(
     children: [
-      _sectionHeader(
-        Icons.sick_outlined,
-        appText('Symptoms', 'الأعراض'),
-        appText('Record how you feel', 'سجل حالتك الصحية'),
-      ),
-      const SizedBox(height: 18),
-      AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              appText('Select all symptoms', 'اختر جميع الأعراض'),
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            _choiceWrap(symptoms, selectedSymptoms),
-            const SizedBox(height: 20),
-            Text(
-              appText(
-                'Severity: ${severity.round()}/10',
-                'الشدة: ${severity.round()}/10',
-              ),
-              style: const TextStyle(fontWeight: FontWeight.w800),),
-            Slider(
-              key: const ValueKey('symptom_severity'),
-              value: severity,
-              min: 0,
-              max: 10,
-              divisions: 10,
-              label: severity.round().toString(),
-              onChanged: (v) => setState(() => severity = v),
-            ),
-            TextField(
-              controller: symptomNote,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: appText('Optional note', 'ملاحظة اختيارية'),
-              ),
-            ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              key: const ValueKey('save_symptoms'),
-              text: appText('Save symptoms', 'حفظ الأعراض'),
-              onPressed: saving ? null : _saveSymptoms,
-            ),
-          ],
+      if (pageIndex > 0)
+        IconButton(
+          onPressed: _goBack,
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          color: AppColors.muted,
         ),
-      ),
-      _logTitle(appText('Symptom history', 'سجل الأعراض')),
-      _logs(
-        symptomLogs,
-        _symptomRow,
-        onDelete: repository.deleteSymptom,
-        onEdit: _editSymptom,
-      ),
-    ],
-  );
-
-  Future<void> _saveSymptoms() => _save(() async {
-    await repository.addSymptomLog(
-      symptoms: selectedSymptoms.toList(),
-      severity: severity.round(),
-      notes: symptomNote.text,
-    );
-    selectedSymptoms.clear();
-    severity = 0;
-    symptomNote.clear();
-    if (mounted) setState(() {});
-  });
-
-  Widget _triggersTab() => Column(
-    children: [
-      _sectionHeader(
-        Icons.warning_amber_rounded,
-        appText('Triggers', 'المثيرات'),
-        appText('Record what triggered symptoms', 'سجل مسببات الأعراض'),
-      ),
-      const SizedBox(height: 18),
-      AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              appText('Select triggers', 'اختر المثيرات'),
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            _choiceWrap(triggers, selectedTriggers),
-            const SizedBox(height: 16),
-            TextField(
-              key: const ValueKey('custom_trigger'),
-              controller: customTrigger,
-              decoration: InputDecoration(
-                labelText: appText('Add another trigger', 'أضف مثيراً آخر'),
-              ),
-            ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              key: const ValueKey('save_triggers'),
-              text: appText('Save triggers', 'حفظ المثيرات'),
-              onPressed: saving ? null : _saveTriggers,
-            ),
-          ],
-        ),
-      ),
-      _logTitle(appText('Trigger history', 'سجل المثيرات')),
-      _logs(
-        triggerLogs,
-        _triggerRow,
-        onDelete: repository.deleteTrigger,
-        onEdit: _editTrigger,
-      ),
-    ],
-  );
-
-  Widget _choiceWrap(Map<String, String> choices, Set<String> selected) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: choices.entries.map((e) {
-      final active = selected.contains(e.key);
-      return FilterChip(
-        selected: active,
-        label: Text(AppState.instance.arabic ? e.value : e.key),
-        onSelected: (_) => setState(
-          () => active ? selected.remove(e.key) : selected.add(e.key),
-        ),
-        selectedColor: const Color(0xFFDCEEFF),
-        checkmarkColor: const Color(0xFF087CF0),
-      );
-    }).toList(),
-  );
-
-  Widget _sectionHeader(IconData icon, String title, String subtitle) => Row(
-    children: [
       Container(
         width: 64,
         height: 64,
@@ -851,6 +1045,13 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           ],
         ),
       ),
+      if (trailing != null)
+        trailing
+      else if (pageIndex < 2)
+        TextButton(
+          onPressed: _skip,
+          child: Text(appText('Skip', 'تخطي')),
+        ),
     ],
   );
 
@@ -1057,7 +1258,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       style: const TextStyle(fontWeight: FontWeight.w800),
     ),
     subtitle: Text(
-      '${appText('Severity', 'الشدة')}: ${row['severity']}/10\n${_date(row['occurred_at'])}${row['notes'] == null ? '' : '\n${row['notes']}'}',
+      '${appText('Severity', 'الشدة')}: ${row['severity']}/5\n${_date(row['occurred_at'])}${row['notes'] == null ? '' : '\n${row['notes']}'}',
     ),
   );
 
@@ -1194,8 +1395,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                 Slider(
                   value: value,
                   min: 0,
-                  max: 10,
-                  divisions: 10,
+                  max: 5,
+                  divisions: 5,
                   onChanged: (v) => set(() => value = v),
                 ),
                 TextField(
@@ -1240,7 +1441,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     final save = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text(appText('Edit triggers', 'تعديل المثيرات')),
+        title: Text(appText('Edit triggers', 'تعديل مهيجات الربو')),
         content: TextField(controller: controller),
         actions: [
           TextButton(
@@ -1288,22 +1489,6 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         )
         .toList(),
   );
-
-  Future<void> _saveTriggers() async {
-    final List<String> values = [...selectedTriggers];
-    if (customTrigger.text.trim().isNotEmpty) {
-      values.add(customTrigger.text.trim());
-    }
-
-    if (values.isEmpty) return;
-
-    await _save(() async {
-      await repository.addTriggersLog(triggers: values);
-      selectedTriggers.clear();
-      customTrigger.clear();
-      if (mounted) setState(() {});
-    });
-  }
 }
 
 class PeakFlowResultDialog extends StatefulWidget {

@@ -107,7 +107,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
                             _values(
                               row['symptoms'],
                             ).map(localizedHealthValue).join('، '),
-                            '${appText('Severity', 'الشدة')}: ${row['severity']}/10  •  ${_date(row['occurred_at'])}${row['notes'] == null ? '' : '\n${row['notes']}'}',
+                            '${appText('Severity', 'الشدة')}: ${row['severity']}/5  •  ${_date(row['occurred_at'])}${row['notes'] == null ? '' : '\n${row['notes']}'}',
                           ),
                         )
                         .toList(),
@@ -116,7 +116,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
                   _section(
                     icon: Icons.warning_amber_rounded,
                     color: const Color(0xFFE2A600),
-                    title: appText('Triggers', 'المثيرات'),
+                    title: appText('Triggers', 'مهيجات الربو'),
                     empty: data.triggers.isEmpty,
                     children: data.triggers
                         .map(
