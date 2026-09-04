@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_state.dart';
+import '../screens/auth_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/main_screens.dart';
 import '../screens/monitoring_screen.dart';
@@ -12,15 +13,27 @@ import '../screens/home_secondary_screens.dart';
 
 final appRouter = GoRouter(
   refreshListenable: AppState.instance,
-  initialLocation: '/onboarding',
+  initialLocation: '/auth',
   redirect: (context, state) {
     final path = state.uri.path;
+    final authed = AppState.instance.isAuthenticated;
+    if (!authed) {
+      return path == '/auth' ? null : '/auth';
+    }
+    if (path == '/auth') {
+      return AppState.instance.onboardingCompleted ? '/' : '/onboarding';
+    }
     if (AppState.instance.onboardingCompleted && path == '/onboarding') {
       return '/';
     }
     return null;
   },
   routes: [
+    GoRoute(
+      path: '/auth',
+      builder: (context, state) =>
+          _LanguageRefresh(builder: (_) => const AuthScreen()),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) =>

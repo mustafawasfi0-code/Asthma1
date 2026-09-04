@@ -69,10 +69,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) setState(() => weather = result);
   }
 
-  Future<void> _exitToOnboarding(BuildContext context) async {
-    await AppState.instance.restartOnboarding();
-    if (context.mounted) context.go('/onboarding');
-  }
 Widget _actionPlan(BuildContext context) => _pressable(
     key: const ValueKey('home_pef'),
     onTap: () => context.go('/monitoring?tab=symptoms'),
@@ -259,22 +255,6 @@ Widget _actionPlan(BuildContext context) => _pressable(
             ),
           ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          key: const ValueKey('start_over_onboarding_fab'),
-          heroTag: 'start_over_onboarding_fab',
-          onPressed: () => _exitToOnboarding(context),
-          backgroundColor: const Color(0xFFDC2626),
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.exit_to_app_rounded),
-          label: Text(
-            appText(
-              'Start over',
-              '\u0631\u062c\u0648\u0639 \u0644\u0644\u0628\u062f\u0627\u064a\u0629',
-            ),
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         bottomNavigationBar: const AppNav(),
       ),
     );

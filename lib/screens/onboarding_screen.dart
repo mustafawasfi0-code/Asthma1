@@ -214,10 +214,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         a
             ? 'لنقم بإعداد ملفك الشخصي لتخصيص خطة إدارة الربو الخاصة بك.'
             : "Let's set up your profile to personalize your asthma management plan.",
-        _field(
-          a ? 'بماذا نناديك؟' : 'What should we call you?',
-          a ? 'أدخل اسمك' : 'Enter your name',
-          name,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _field(
+              a ? 'بماذا نناديك؟' : 'What should we call you?',
+              a ? 'أدخل اسمك' : 'Enter your name',
+              name,
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    SupabaseService.client?.auth.currentUser?.email ?? '',
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
       (

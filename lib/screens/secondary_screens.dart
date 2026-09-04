@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/app_state.dart';
 import '../core/app_theme.dart';
 import '../core/localized_values.dart';
 import '../models/profile.dart';
@@ -283,9 +284,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: const Icon(Icons.description_outlined),
                 label: Text(appText('Doctor Report', 'تقرير الطبيب')),
               ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                key: const ValueKey('profile_logout_button'),
+                onPressed: () => _confirmLogout(c),
+                icon: const Icon(Icons.logout, color: Colors.red),
+                label: Text(
+                  appText('Logout', 'تسجيل الخروج'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red),
+                ),
+              ),
             ],
           ),
   );
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final a = AppState.instance.arabic;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(a ? 'تسجيل الخروج' : 'Log out'),
+        content: Text(
+          a
+              ? 'هل تريد تسجيل الخروج من حسابك؟'
+              : 'Are you sure you want to log out?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(a ? 'إلغاء' : 'Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(a ? 'تسجيل الخروج' : 'Log out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await AppState.instance.signOut();
+    if (context.mounted) context.go('/auth');
+  }
 }
 
 class CommunityScreen extends StatefulWidget {

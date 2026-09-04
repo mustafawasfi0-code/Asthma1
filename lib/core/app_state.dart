@@ -1,11 +1,23 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthState;
+import '../services/supabase_service.dart';
 
 class AppState extends ChangeNotifier {
-  
-  AppState._();
+  AppState._() {
+    _authSubscription = SupabaseService.authStateChanges?.listen((_) {
+      notifyListeners();
+    });
+  }
   static final instance = AppState._();
+
+  StreamSubscription<AuthState>? _authSubscription;
+
   bool arabic = false, onboardingCompleted = false;
+
+  bool get isAuthenticated => SupabaseService.isSignedIn;
+
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     arabic = p.getBool('arabic') ?? false;
@@ -35,5 +47,14 @@ class AppState extends ChangeNotifier {
     );
     notifyListeners();
   }
-  
+
+  Future<void> signOut() async {
+    await SupabaseService.signOut();
+    onboardingCompleted = false;
+    await (await SharedPreferences.getInstance()).setBool(
+      'onboarding_completed',
+      false,
+    );
+    notifyListeners();
+  }
 }
