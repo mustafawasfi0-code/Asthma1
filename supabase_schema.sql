@@ -164,13 +164,13 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name, city, age, sex, height_cm, role)
-  values (
-    new.id,
-    coalesce(nullif(trim(new.raw_user_meta_data ->> 'name'), ''), 'New User'),
-    'Baghdad', 18, 'Male', 170, 'patient'
-  )
-  on conflict (id) do nothing;
+ insert into public.profiles (id, name, city, age, sex, height_cm, role)
+values (
+  new.id,
+  coalesce(nullif(trim(new.raw_user_meta_data ->> 'name'), ''), 'New User'),
+  'Baghdad', 18, 'Male', 170, 'patient'
+)
+on conflict (id) do nothing;
   return new;
 end;
 $$;
