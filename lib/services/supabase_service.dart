@@ -1,17 +1,13 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 
 class SupabaseService {
   static bool initialized = false;
   static SupabaseClient? get client =>
       initialized ? Supabase.instance.client : null;
 
-  /// Must match the redirect URL registered in Supabase Dashboard
-  /// (Authentication > URL Configuration) AND the URL scheme registered
-  /// natively on Android/iOS. See setup notes.
-  static const _mobileRedirect = 'io.supabase.asthmacare://login-callback/';
+  static bool _googleInitialized = false;
 
   static Future<void> initialize() async {
     final u = dotenv.env['SUPABASE_URL']?.trim() ?? '',
@@ -19,6 +15,22 @@ class SupabaseService {
     if (u.isEmpty || k.isEmpty) return;
     await Supabase.initialize(url: u, publishableKey: k);
     initialized = true;
+
+    // webClientId (the "Web application" client) is used on EVERY platform,
+    // including Android, so Supabase can verify the token server-side.
+    // iosClientId is required on iOS only.
+    final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID']?.trim() ?? '';
+    final iosClientId = dotenv.env['GOOGLE_IOS_CLIENT_ID']?.trim() ?? '';
+    if (webClientId.isEmpty) return;
+    try {
+      await GoogleSignIn.instance.initialize(
+        clientId: iosClientId.isEmpty ? null : iosClientId,
+        serverClientId: webClientId,
+      );
+      _googleInitialized = true;
+    } catch (_) {
+      // Leave false; signInWithGoogle() surfaces a clear error instead.
+    }
   }
 
   static Stream<AuthState>? get authStateChanges =>
@@ -26,19 +38,47 @@ class SupabaseService {
 
   static bool get isSignedIn => client?.auth.currentUser != null;
 
+  /// Native Google sign-in — no browser, no deep link, no redirect URLs.
   static Future<void> signInWithGoogle() async {
     final c = client;
     if (c == null) throw StateError('Supabase is not initialized');
-    await c.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: kIsWeb ? null : _mobileRedirect,
-      authScreenLaunchMode:
-          kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+    if (!_googleInitialized) {
+      throw StateError('Google sign-in is not configured (missing client id)');
+    }
+
+    final googleUser = await GoogleSignIn.instance.authenticate();
+
+    final idToken = googleUser.authentication.idToken;
+    if (idToken == null) {
+      throw const AuthException('Could not obtain a Google ID token.');
+    }
+
+    String? accessToken;
+    try {
+      final authorization =
+          await googleUser.authorizationClient
+                  .authorizationForScopes(['email', 'profile']) ??
+              await googleUser.authorizationClient
+                  .authorizeScopes(['email', 'profile']);
+      accessToken = authorization.accessToken;
+    } catch (_) {
+      // ID token alone is enough for signInWithIdToken if this fails.
+    }
+
+    await c.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
     );
   }
 
   static Future<void> signOut() async {
     await client?.auth.signOut();
+    if (_googleInitialized) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {}
+    }
   }
 
   static String readableError(Object e) => e is AuthException
