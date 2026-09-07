@@ -24,16 +24,18 @@ class _AuthScreenState extends State<AuthScreen> {
       await SupabaseService.signInWithGoogle();
       // On success, AppState's auth-state listener notifies the router,
       // which redirects automatically. Nothing else to do here.
-    } catch (_) {
-      if (mounted) {
-        setState(
-          () => error = appText(
-            'Could not sign in with Google. Please try again.',
-            'تعذر تسجيل الدخول عبر جوجل. حاول مرة أخرى.',
-          ),
-        );
-      }
-    } finally {
+  } catch (e, st) {
+  debugPrint('Google sign-in error: $e');
+  debugPrint('$st');
+  if (mounted) {
+    setState(
+      () => error = appText(
+        'Could not sign in with Google. Please try again.',
+        'تعذر تسجيل الدخول عبر جوجل. حاول مرة أخرى.',
+      ),
+    );
+  }
+}finally {
       if (mounted) setState(() => loading = false);
     }
   }
