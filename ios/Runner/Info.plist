@@ -1,19 +1,9 @@
 <key>CFBundleURLTypes</key>
 <array>
-    <dict>
-        <key>CFBundleURLName</key>
-        <string>asthmacare</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-            <string>asthmacare</string>
-        </array>
-    </dict>
-    <dict>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-            <string>io.supabase.asthmacare</string>
-        </array>
-    </dict>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>io.supabase.asthmacare</string>
+    </array>
+  </dict>
 </array>
