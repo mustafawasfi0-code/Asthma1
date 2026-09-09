@@ -404,8 +404,16 @@ bool isValidEmergencyPhone(String value) {
   return RegExp(r'^07\d{9}$').hasMatch(phone) ||
       RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(phone);
 }
+
 class MedicationSelectionScreen extends StatefulWidget {
-  const MedicationSelectionScreen({super.key});
+  const MedicationSelectionScreen({
+    super.key, 
+    this.fromEdit = false,
+    this.initialCodes = const [],
+  });
+  
+  final bool fromEdit;
+  final List<String> initialCodes;
 
   @override
   State<MedicationSelectionScreen> createState() =>
@@ -427,13 +435,17 @@ class _MedicationSelectionScreenState
 
   Future<void> _load() async {
     try {
-      final results = await Future.wait([
-        repository.loadMedications(),
-        repository.loadSelectedMedicationCodes(),
-      ]);
-      OnboardingMedicationState.instance
-        ..setCatalog(results[0] as List<Medication>)
-        ..setSelected(results[1] as Set<String>);
+      final catalog = await repository.loadMedications();
+      OnboardingMedicationState.instance.setCatalog(catalog);
+
+      if (widget.fromEdit) {
+        // إذا كنا في وضع التعديل، نستخدم الكودات التي مررناها من الشاشة الرئيسية
+        OnboardingMedicationState.instance.setSelected(widget.initialCodes.toSet());
+      } else {
+        // خلاف ذلك نطلب التحديدات من قاعدة البيانات
+        final selected = await repository.loadSelectedMedicationCodes();
+        OnboardingMedicationState.instance.setSelected(selected);
+      }
     } catch (e) {
       error = SupabaseService.readableError(e);
     } finally {
@@ -449,12 +461,15 @@ class _MedicationSelectionScreenState
     });
     try {
       await repository.saveSelectedMedicationCodes(
-        OnboardingMedicationState.instance.selectedCodes,
-      );
-      if (!mounted) return;
-      if (OnboardingMedicationState.instance.selectedCodes.isEmpty) {
-  // 👈 قم بتغيير السطر الموجود هنا إلى:
-  context.push('/onboarding/triggers'); 
+  OnboardingMedicationState.instance.selectedCodes,
+);
+if (!mounted) return;
+if (widget.fromEdit) {
+  context.go('/'); // straight back to the dashboard, triggers a fresh load
+  return;
+}
+if (OnboardingMedicationState.instance.selectedCodes.isEmpty) {
+  context.push('/onboarding/triggers');
 } else {
   context.push('/onboarding/medications/info/0');
 }

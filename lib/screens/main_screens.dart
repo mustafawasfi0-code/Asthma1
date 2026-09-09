@@ -69,101 +69,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) setState(() => weather = result);
   }
 
-Widget _actionPlan(BuildContext context) => _pressable(
-    key: const ValueKey('home_pef'),
-    onTap: () => context.go('/monitoring?tab=symptoms'),
-    borderRadius: 28,
-    child: Container(
-      height: 172,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF16E1AF), Color(0xFF00BE13)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x2B00A73C),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          PositionedDirectional(
-            end: -35,
-            top: -46,
-            child: Container(
-              width: 145,
-              height: 145,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .10),
-                shape: BoxShape.circle,
-              ),
+  Widget _actionPlan(BuildContext context) => _pressable(
+        key: const ValueKey('home_pef'),
+        onTap: () => context.go('/monitoring?tab=symptoms'),
+        borderRadius: 28,
+        child: Container(
+          height: 172,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF16E1AF), Color(0xFF00BE13)],
             ),
-          ),
-          PositionedDirectional(
-            start: -38,
-            bottom: -62,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .08),
-                shape: BoxShape.circle,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x2B00A73C),
+                blurRadius: 18,
+                offset: Offset(0, 8),
               ),
-            ),
+            ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              const Icon(
-                Icons.health_and_safety_outlined,
-                color: Colors.white,
-                size: 36,
-              ),
-              const Spacer(),
-              Text(
-                appText('Daily Check', 'الفحص اليومي'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  height: 1.15,
-                  fontWeight: FontWeight.w800,
+              PositionedDirectional(
+                end: -35,
+                top: -46,
+                child: Container(
+                  width: 145,
+                  height: 145,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .10),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-              const SizedBox(height: 5),
-              Row(
+              PositionedDirectional(
+                start: -38,
+                bottom: -62,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .08),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                       appText('Daily checking of your health', 'الفحص اليومي لصحتك'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  const Icon(
+                    Icons.health_and_safety_outlined,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                  const Spacer(),
+                  Text(
+                    appText('Daily Check', 'الفحص اليومي'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      height: 1.15,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 15,
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          appText('Daily checking of your health', 'الفحص اليومي لصحتك'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 15,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -201,40 +202,40 @@ Widget _actionPlan(BuildContext context) => _pressable(
                           _actionPlan(context),
                           const SizedBox(height: 22),
                           Row(
-  children: [
-    Expanded(
-      child: _gradientAction(
-        context,
-        key: const ValueKey('home_action_plan'),
-        colors: const [
-          Color(0xFFFF5B00),
-          Color(0xFFFF1808),
-        ],
-        iconColor: const Color(0xFFFF6B12),
-        icon:  Icons.assignment_outlined,
-        title:  appText('Your Action Plan', 'خطة العمل الخاصة بك'),
-        subtitle: appText('Open action plan', 'افتح خطة العمل'),
-         onTap: () => context.go('/action-plan'),
-      ),
-    ),
-    const SizedBox(width: 12),
-    Expanded(
-      child: _gradientAction(
-        context,
-        key: const ValueKey('home_inhaler'),
-        colors: const [
-          Color(0xFFD51CF1),
-          Color(0xFFA900ED),
-        ],
-        iconColor: const Color(0xFFCB42EB),
-        icon: Icons.monitor_heart_outlined,
-        title: appText('Use inhaler', 'استخدام البخاخ'),
-        subtitle: appText('Learn technique', 'تعلم الطريقة'),
-        onTap: () => context.go('/learn/inhaler-technique?tab=inhaler'),
-      ),
-    ),
-  ],
-),
+                            children: [
+                              Expanded(
+                                child: _gradientAction(
+                                  context,
+                                  key: const ValueKey('home_action_plan'),
+                                  colors: const [
+                                    Color(0xFFFF5B00),
+                                    Color(0xFFFF1808),
+                                  ],
+                                  iconColor: const Color(0xFFFF6B12),
+                                  icon: Icons.assignment_outlined,
+                                  title: appText('Your Action Plan', 'خطة العمل الخاصة بك'),
+                                  subtitle: appText('Open action plan', 'افتح خطة العمل'),
+                                  onTap: () => context.go('/action-plan'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _gradientAction(
+                                  context,
+                                  key: const ValueKey('home_inhaler'),
+                                  colors: const [
+                                    Color(0xFFD51CF1),
+                                    Color(0xFFA900ED),
+                                  ],
+                                  iconColor: const Color(0xFFCB42EB),
+                                  icon: Icons.monitor_heart_outlined,
+                                  title: appText('Use inhaler', 'استخدام البخاخ'),
+                                  subtitle: appText('Learn technique', 'تعلم الطريقة'),
+                                  onTap: () => context.go('/learn/inhaler-technique?tab=inhaler'),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 22),
                           _medications(context, data),
                           const SizedBox(height: 22),
@@ -261,75 +262,76 @@ Widget _actionPlan(BuildContext context) => _pressable(
   }
 
   Widget _homeHeader(BuildContext context, HomeData? home) => Row(
-    children: [
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              home?.profile?.name == null
-                  ? appText('Hello', 'مرحباً')
-                  : appText('Hello, ', 'مرحباً، ') +
-                        localizedPersonName(home!.profile!.name),
-              style: const TextStyle(
-                color: _muted,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  home?.profile?.name == null
+                      ? appText('Hello', 'مرحباً')
+                      : appText('Hello, ', 'مرحباً، ') +
+                          localizedPersonName(home!.profile!.name),
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  appText('Your asthma dashboard', 'لوحة متابعة الربو'),
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 25,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: AppState.instance.toggleLanguage,
+            style: TextButton.styleFrom(
+              foregroundColor: _blue,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              appText('Your asthma dashboard', 'لوحة متابعة الربو'),
-              style: const TextStyle(
-                color: _ink,
-                fontSize: 25,
-                height: 1.2,
-                fontWeight: FontWeight.w800,
+            child: Text(AppState.instance.arabic ? 'English' : 'العربية'),
+          ),
+        ],
+      );
+
+  Widget _errorBanner() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF4E5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFD9A0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_outlined, color: Color(0xFFB45309)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                loadError!,
+                style: const TextStyle(color: Color(0xFF92400E)),
               ),
+            ),
+            IconButton(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              color: const Color(0xFFB45309),
             ),
           ],
         ),
-      ),
-      TextButton(
-        onPressed: AppState.instance.toggleLanguage,
-        style: TextButton.styleFrom(
-          foregroundColor: _blue,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: Text(AppState.instance.arabic ? 'English' : 'العربية'),
-      ),
-    ],
-  );
+      );
 
-  Widget _errorBanner() => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFF4E5),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFFFD9A0)),
-    ),
-    child: Row(
-      children: [
-        const Icon(Icons.cloud_off_outlined, color: Color(0xFFB45309)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            loadError!,
-            style: const TextStyle(color: Color(0xFF92400E)),
-          ),
-        ),
-        IconButton(
-          onPressed: _load,
-          icon: const Icon(Icons.refresh),
-          color: const Color(0xFFB45309),
-        ),
-      ],
-    ),
-  );
   void _openMedicationPicker(BuildContext context, List<Medication> medicines) {
     showModalBottomSheet<void>(
       context: context,
@@ -343,6 +345,7 @@ Widget _actionPlan(BuildContext context) => _pressable(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
           ),
+          // التعديل هنا: استخدام Flexible و SingleChildScrollView
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -355,48 +358,55 @@ Widget _actionPlan(BuildContext context) => _pressable(
                 ),
               ),
               const SizedBox(height: 12),
-              ...medicines.map(
-                (medicine) => Padding(
-                  padding: const EdgeInsets.only(bottom: 9),
-                  child: Material(
-                    color: const Color(0xFFF7FAFC),
-                    borderRadius: BorderRadius.circular(17),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0A8CF5),
-                          borderRadius: BorderRadius.circular(13),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: medicines.map(
+                      (medicine) => Padding(
+                        padding: const EdgeInsets.only(bottom: 9),
+                        child: Material(
+                          color: const Color(0xFFF7FAFC),
+                          borderRadius: BorderRadius.circular(17),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            leading: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0A8CF5),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: const Icon(
+                                Icons.medication_outlined,
+                                color: Colors.white,
+                              ),
+                            ),
+                            title: Text(
+                              AppState.instance.arabic
+                                  ? medicine.nameAr
+                                  : medicine.nameEn,
+                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            subtitle: Text(
+                              AppState.instance.arabic
+                                  ? medicine.descriptionAr
+                                  : medicine.descriptionEn,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                            onTap: () {
+                              Navigator.of(sheetContext).pop();
+                              context.go('/medications/info/${medicine.code}');
+                            },
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.medication_outlined,
-                          color: Colors.white,
-                        ),
                       ),
-                      title: Text(
-                        AppState.instance.arabic
-                            ? medicine.nameAr
-                            : medicine.nameEn,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: Text(
-                        AppState.instance.arabic
-                            ? medicine.descriptionAr
-                            : medicine.descriptionEn,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        context.go('/medications/info/${medicine.code}');
-                      },
-                    ),
+                    ).toList(),
                   ),
                 ),
               ),
@@ -434,7 +444,13 @@ Widget _actionPlan(BuildContext context) => _pressable(
               ),
               TextButton.icon(
                 key: const ValueKey('home_edit_medications'),
-                onPressed: () => context.go('/onboarding/medications'),
+                onPressed: () {
+                  final currentCodes = medicines.map((m) => m.code).toList();
+                  context.push(
+                    '/onboarding/medications?edit=true',
+                    extra: currentCodes,
+                  );
+                },
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: Text(appText('Edit', 'تعديل')),
                 style: TextButton.styleFrom(
@@ -453,8 +469,8 @@ Widget _actionPlan(BuildContext context) => _pressable(
             onTap: selected == null
                 ? () => context.go('/onboarding/medications')
                 : medicines.length == 1
-                ? () => context.go('/medications/info/${selected.code}')
-                : () => _openMedicationPicker(context, medicines),
+                    ? () => context.go('/medications/info/${selected.code}')
+                    : () => _openMedicationPicker(context, medicines),
             borderRadius: 18,
             child: Container(
               height: medicines.length > 1 ? 112 : 92,
@@ -557,8 +573,8 @@ Widget _actionPlan(BuildContext context) => _pressable(
                                         '${medicines.length} أدوية مختارة',
                                       )
                                     : AppState.instance.arabic
-                                    ? selected.descriptionAr
-                                    : selected.descriptionEn,
+                                        ? selected.descriptionAr
+                                        : selected.descriptionEn,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -589,103 +605,98 @@ Widget _actionPlan(BuildContext context) => _pressable(
   }
 
   Widget _gradientAction(
-  BuildContext context, {
-  required Key key,
-  required List<Color> colors,
-  required Color iconColor,
-  required IconData icon,
-  required String title,
-  required String subtitle,
-  required VoidCallback onTap,
-}) {
-  return InkWell(
-    key: key,
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(16),
-    child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    BuildContext context, {
+    required Key key,
+    required List<Color> colors,
+    required Color iconColor,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
         ),
-        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start, // لمحاذاة النص لليسار أو لليمين حسب اللغة
-        children: [
-          // الأيقونة مع الخلفية الدائرية الشفافة
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
-          ),
-          const SizedBox(height: 12), // مسافة بين الأيقونة والنص
-          
-          // العنوان
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          
-          // الوصف
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _stats(HomeData? home) => Row(
-    children: [
-      Expanded(
-        child: _stat(
-          Icons.air,
-          const Color(0xFF0086EA),
-          home?.latestPeakFlow?.toString() ?? '--',
-          'PEF',
-        ),
-      ),
-      const SizedBox(width: 14),
-      Expanded(
-        child: _stat(
-          Icons.medication_outlined,
-          const Color(0xFFD52EEA),
-          home?.medications.length.toString() ?? '0',
-          appText('Medicines', 'أدوية'),
-        ),
-      ),
-      const SizedBox(width: 14),
-      Expanded(
-        child: _stat(
-          Icons.trending_up,
-          const Color(0xFF00C878),
-          home?.peakFlows.length.toString() ?? '0',
-          appText('Readings', 'قراءات'),
-        ),
-      ),
-    ],
-  );
+        children: [
+          Expanded(
+            child: _stat(
+              Icons.air,
+              const Color(0xFF0086EA),
+              home?.latestPeakFlow?.toString() ?? '--',
+              'PEF',
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: _stat(
+              Icons.medication_outlined,
+              const Color(0xFFD52EEA),
+              home?.medications.length.toString() ?? '0',
+              appText('Medicines', 'أدوية'),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: _stat(
+              Icons.trending_up,
+              const Color(0xFF00C878),
+              home?.peakFlows.length.toString() ?? '0',
+              appText('Readings', 'قراءات'),
+            ),
+          ),
+        ],
+      );
 
   Widget _stat(IconData icon, Color color, String value, String label) =>
       _surface(
@@ -794,46 +805,46 @@ Widget _actionPlan(BuildContext context) => _pressable(
   }
 
   Widget _reminderRow(HomeReminder reminder) => Row(
-    children: [
-      Container(
-        width: 43,
-        height: 43,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF0DA),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: const Icon(
-          Icons.notifications_active_outlined,
-          color: Color(0xFFFF5A00),
-          size: 24,
-        ),
-      ),
-      const SizedBox(width: 13),
-      Expanded(
-        child: Text(
-          reminder.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: _ink,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+        children: [
+          Container(
+            width: 43,
+            height: 43,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF0DA),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.notifications_active_outlined,
+              color: Color(0xFFFF5A00),
+              size: 24,
+            ),
           ),
-        ),
-      ),
-      Directionality(
-        textDirection: TextDirection.ltr,
-        child: Text(
-          reminder.time,
-          style: const TextStyle(
-            color: _muted,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
+          const SizedBox(width: 13),
+          Expanded(
+            child: Text(
+              reminder.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-        ),
-      ),
-    ],
-  );
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text(
+              reminder.time,
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      );
 
   Widget _weather(WeatherStatus status, String? profileCity) {
     final arabic = AppState.instance.arabic;
@@ -945,8 +956,7 @@ Widget _actionPlan(BuildContext context) => _pressable(
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          arabic ? 'موقعك الحالي'
-                          : 'Current location',
+                          arabic ? 'موقعك الحالي' : 'Current location',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1007,218 +1017,221 @@ Widget _actionPlan(BuildContext context) => _pressable(
     Color color,
     String label,
     String value,
-  ) => Container(
-    height: 104,
-    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .82),
-      borderRadius: BorderRadius.circular(17),
-      border: Border.all(color: const Color(0xFFDDECF2)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0B101828),
-          blurRadius: 8,
-          offset: Offset(0, 3),
+  ) =>
+      Container(
+        height: 104,
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .82),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: const Color(0xFFDDECF2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0B101828),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 6),
-            Expanded(
+            Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: _muted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            SizedBox(
+              height: 28,
+              width: double.infinity,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  label,
+                  value,
                   maxLines: 1,
                   style: const TextStyle(
-                    color: _muted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    color: _ink,
+                    fontSize: 25,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
             ),
           ],
         ),
-        const Spacer(),
-        SizedBox(
-          height: 28,
-          width: double.infinity,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              value,
-              maxLines: 1,
-              style: const TextStyle(
-                color: _ink,
-                fontSize: 25,
-                height: 1,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 
   Widget _medicalDisclaimer() => Container(
-    key: const ValueKey('home_disclaimer'),
-    padding: const EdgeInsets.all(19),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF0F5F8),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xFFD8E0E6)),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Icon(Icons.error_outline, color: Color(0xFF87919D), size: 25),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appText('Take medical responsibility', 'إخلاء مسؤولية طبي'),
-                style: const TextStyle(
-                  color: Color(0xFF374151),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                appText(
-                  'This app supports self-management and does not replace medical advice. In an emergency, contact your doctor immediately.',
-                  'هذا التطبيق لدعم الإدارة الذاتية ولا يحل محل المشورة الطبية. في الطوارئ، اتصل بطبيبك فوراً.',
-                ),
-                style: const TextStyle(
-                  color: Color(0xFF4B5563),
-                  fontSize: 13,
-                  height: 1.55,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+        key: const ValueKey('home_disclaimer'),
+        padding: const EdgeInsets.all(19),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F5F8),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD8E0E6)),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.error_outline, color: Color(0xFF87919D), size: 25),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appText('Take medical responsibility', 'إخلاء مسؤولية طبي'),
+                    style: const TextStyle(
+                      color: Color(0xFF374151),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    appText(
+                      'This app supports self-management and does not replace medical advice. In an emergency, contact your doctor immediately.',
+                      'هذا التطبيق لدعم الإدارة الذاتية ولا يحل محل المشورة الطبية. في الطوارئ، اتصل بطبيبك فوراً.',
+                    ),
+                    style: const TextStyle(
+                      color: Color(0xFF4B5563),
+                      fontSize: 13,
+                      height: 1.55,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _surface({
     required Widget child,
     required EdgeInsetsGeometry padding,
-  }) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: const Color(0xFFE6EDF2)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x10101828),
-          blurRadius: 12,
-          offset: Offset(0, 5),
+  }) =>
+      Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE6EDF2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x10101828),
+              blurRadius: 12,
+              offset: Offset(0, 5),
+            ),
+          ],
         ),
-      ],
-    ),
-    child: child,
-  );
+        child: child,
+      );
 
   Widget _pressable({
     Key? key,
     required Widget child,
     required VoidCallback onTap,
     required double borderRadius,
-  }) => Material(
-    key: key,
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(borderRadius),
-      splashColor: Colors.white.withValues(alpha: .16),
-      highlightColor: Colors.white.withValues(alpha: .08),
-      onTap: onTap,
-      child: child,
-    ),
-  );
+  }) =>
+      Material(
+        key: key,
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(borderRadius),
+          splashColor: Colors.white.withValues(alpha: .16),
+          highlightColor: Colors.white.withValues(alpha: .08),
+          onTap: onTap,
+          child: child,
+        ),
+      );
 }
 
 class ActionPlanScreen extends StatelessWidget {
   const ActionPlanScreen({super.key});
   @override
   Widget build(BuildContext c) => PageFrame(
-    title: appText('Asthma Action Plan', 'خطة التعامل مع الربو'),
-    subtitle: appText(
-      'Your guide to managing symptoms',
-      'دليلك للتعامل مع الأعراض',
-    ),
-    child: Column(
-      children: [
-        _zone(
-          appText('Green Zone: Doing Well', 'المنطقة الخضراء: الحالة جيدة'),
-          appText(
-            'Breathing is good. No cough or wheeze.',
-            'التنفس جيد، ولا يوجد سعال أو صفير',
-          ),
-          appText(
-            'Take controller medicines as prescribed.',
-            'خذ أدوية التحكم حسب وصف الطبيب',
-          ),
-          Colors.green,
-          Icons.check_circle,
+        title: appText('Asthma Action Plan', 'خطة التعامل مع الربو'),
+        subtitle: appText(
+          'Your guide to managing symptoms',
+          'دليلك للتعامل مع الأعراض',
         ),
-        _zone(
-          appText('Yellow Zone: Caution', 'المنطقة الصفراء: انتباه'),
-          appText(
-            'Cough, wheeze, chest tightness, waking at night.',
-            'سعال أو صفير أو ضيق في الصدر أو استيقاظ ليلاً',
-          ),
-          appText(
-            'Use rescue inhaler and monitor peak flow.',
-            'استخدم بخاخ الإنقاذ وراقب ذروة التدفق',
-          ),
-          Colors.amber,
-          Icons.warning,
-        ),
-        _zone(
-          appText('Red Zone: Medical Alert', 'المنطقة الحمراء: إنذار طبي'),
-          appText(
-            'Severe shortness of breath or medicines are not helping.',
-            'ضيق تنفس شديد أو أن الأدوية لا تساعد',
-          ),
-          appText(
-            'Use rescue medicine and get medical help now.',
-            'استخدم دواء الإنقاذ واطلب المساعدة الطبية فوراً',
-          ),
-          Colors.red,
-          Icons.emergency,
-        ),
-        AppCard(
-          onTap: () => EmergencyCallService.call(c),
-          child: ListTile(
-            leading: Icon(Icons.phone, color: Colors.red),
-            title: Text(
-              appText('Emergency Contact', 'جهة اتصال الطوارئ'),
-              style: TextStyle(fontWeight: FontWeight.bold),
+        child: Column(
+          children: [
+            _zone(
+              appText('Green Zone: Doing Well', 'المنطقة الخضراء: الحالة جيدة'),
+              appText(
+                'Breathing is good. No cough or wheeze.',
+                'التنفس جيد، ولا يوجد سعال أو صفير',
+              ),
+              appText(
+                'Take controller medicines as prescribed.',
+                'خذ أدوية التحكم حسب وصف الطبيب',
+              ),
+              Colors.green,
+              Icons.check_circle,
             ),
-            subtitle: Text(
-              appText('Call Emergency Contact', 'الاتصال بجهة الطوارئ'),
+            _zone(
+              appText('Yellow Zone: Caution', 'المنطقة الصفراء: انتباه'),
+              appText(
+                'Cough, wheeze, chest tightness, waking at night.',
+                'سعال أو صفير أو ضيق في الصدر أو استيقاظ ليلاً',
+              ),
+              appText(
+                'Use rescue inhaler and monitor peak flow.',
+                'استخدم بخاخ الإنقاذ وراقب ذروة التدفق',
+              ),
+              Colors.amber,
+              Icons.warning,
             ),
-            trailing: Icon(Icons.arrow_forward),
-          ),
+            _zone(
+              appText('Red Zone: Medical Alert', 'المنطقة الحمراء: إنذار طبي'),
+              appText(
+                'Severe shortness of breath or medicines are not helping.',
+                'ضيق تنفس شديد أو أن الأدوية لا تساعد',
+              ),
+              appText(
+                'Use rescue medicine and get medical help now.',
+                'استخدم دواء الإنقاذ واطلب المساعدة الطبية فوراً',
+              ),
+              Colors.red,
+              Icons.emergency,
+            ),
+            AppCard(
+              onTap: () => EmergencyCallService.call(c),
+              child: ListTile(
+                leading: Icon(Icons.phone, color: Colors.red),
+                title: Text(
+                  appText('Emergency Contact', 'جهة اتصال الطوارئ'),
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  appText('Call Emergency Contact', 'الاتصال بجهة الطوارئ'),
+                ),
+                trailing: Icon(Icons.arrow_forward),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
   Widget _zone(String t, String s, String a, Color color, IconData icon) =>
       Padding(
         padding: EdgeInsets.only(bottom: 14),

@@ -33,7 +33,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   late final PageController _flowController;
 
   bool saving = false, loading = true;
-  bool _showForm = false;
+  bool _showForm = true;
   String? error;
   int? currentPersonalBest;
   final selectedSymptoms = <String>{};
@@ -630,26 +630,6 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           Icons.air,
           appText('Peak Flow', 'ذروة التدفق'),
           appText('Monitor lung function', 'راقب وظائف الرئة'),
-          trailing: Material(
-            color: const Color(0xFF087CF0),
-            shape: const CircleBorder(),
-            elevation: 5,
-            shadowColor: const Color(0x55087CF0),
-            child: InkWell(
-              key: const ValueKey('new_pef_entry'),
-              customBorder: const CircleBorder(),
-              onTap: () {
-                setState(() {
-                  _showForm = true;
-                });
-              },
-              child: const SizedBox(
-                width: 58,
-                height: 58,
-                child: Icon(Icons.add, color: Colors.white, size: 35),
-              ),
-            ),
-          ),
         ),
         const SizedBox(height: 14),
         if (_showForm) ...[

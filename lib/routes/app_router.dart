@@ -10,6 +10,7 @@ import '../screens/learn_screens.dart';
 import '../screens/inhaler_technique_screens.dart';
 import '../screens/secondary_screens.dart';
 import '../screens/home_secondary_screens.dart';
+import '../screens/update_password_screen.dart'; // شاشة تحديث كلمة المرور الجديدة
 
 final appRouter = GoRouter(
   refreshListenable: AppState.instance,
@@ -17,6 +18,10 @@ final appRouter = GoRouter(
   redirect: (context, state) {
     final path = state.uri.path;
     final authed = AppState.instance.isAuthenticated;
+    
+    // استثناء مهم: السماح بمرور رابط تغيير الباسورد بدون تسجيل دخول
+    if (path == '/reset-callback') return null;
+
     if (!authed) {
       return path == '/auth' ? null : '/auth';
     }
@@ -34,6 +39,12 @@ final appRouter = GoRouter(
       builder: (context, state) =>
           _LanguageRefresh(builder: (_) => const AuthScreen()),
     ),
+    // مسار استقبال رابط إعادة تعيين كلمة المرور
+    GoRoute(
+      path: '/reset-callback',
+      builder: (context, state) =>
+          _LanguageRefresh(builder: (_) => const UpdatePasswordScreen()),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) =>
@@ -41,8 +52,17 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/onboarding/medications',
-      builder: (context, state) =>
-          _LanguageRefresh(builder: (_) => const MedicationSelectionScreen()),
+      builder: (context, state) {
+        // استلام الكودات الممررة من الشاشة الرئيسية
+        final existingCodes = state.extra as List<String>? ?? [];
+        
+        return _LanguageRefresh(
+          builder: (_) => MedicationSelectionScreen(
+            fromEdit: state.uri.queryParameters['edit'] == 'true',
+            initialCodes: existingCodes, // إرسالها للشاشة
+          ),
+        );
+      },
     ),
     GoRoute(
       path: '/onboarding/medications/info/:index',
@@ -69,20 +89,20 @@ final appRouter = GoRouter(
           _LanguageRefresh(builder: (_) => DashboardScreen()),
     ),
     GoRoute(
-  path: '/monitoring',
-  builder: (context, state) {
-    final tabParam = state.uri.queryParameters['tab'];
-    final initialTab = switch (tabParam) {
-      null => 0,        // no query param at all → bottom nav bar
-      'symptoms' => 1,
-      'triggers' => 2,
-      _ => 3,            // 'peak-flow', 'inhaler', or anything else
-    };
-    return _LanguageRefresh(
-      builder: (_) => MonitoringScreen(initialTab: initialTab),
-    );
-  },
-),
+      path: '/monitoring',
+      builder: (context, state) {
+        final tabParam = state.uri.queryParameters['tab'];
+        final initialTab = switch (tabParam) {
+          null => 0,        // no query param at all → bottom nav bar
+          'symptoms' => 1,
+          'triggers' => 2,
+          _ => 3,            // 'peak-flow', 'inhaler', or anything else
+        };
+        return _LanguageRefresh(
+          builder: (_) => MonitoringScreen(initialTab: initialTab),
+        );
+      },
+    ),
     GoRoute(
       path: '/monitoring/report',
       builder: (context, state) =>
@@ -147,13 +167,13 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
-  path: '/onboarding/medications/how-to-use/:index',
-  builder: (context, state) => _LanguageRefresh(
-    builder: (_) => MedicationHowToUseScreen(
-      index: int.tryParse(state.pathParameters['index'] ?? '') ?? 0,
+      path: '/onboarding/medications/how-to-use/:index',
+      builder: (context, state) => _LanguageRefresh(
+        builder: (_) => MedicationHowToUseScreen(
+          index: int.tryParse(state.pathParameters['index'] ?? '') ?? 0,
+        ),
+      ),
     ),
-  ),
-),
     GoRoute(
       path: '/reminders',
       builder: (context, state) =>
@@ -165,9 +185,10 @@ final appRouter = GoRouter(
           _LanguageRefresh(builder: (_) => MedicationScreen()),
     ),
     GoRoute(
-  path: '/onboarding/triggers',
-  builder: (context, state) => const TriggersScreen(),
-),
+      path: '/onboarding/triggers',
+      builder: (context, state) => const TriggersScreen(),
+    ),
+    
   ],
 );
 
@@ -178,7 +199,7 @@ class _LanguageRefresh extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: AppState.instance,
-    builder: (context, _) => builder(context),
-  );
+        listenable: AppState.instance,
+        builder: (context, _) => builder(context),
+      );
 }

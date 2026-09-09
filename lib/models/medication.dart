@@ -43,33 +43,59 @@ class Medication {
 
   bool get isEmergency => medicationType == 'emergency';
 
-  factory Medication.fromJson(Map<String, dynamic> json) => Medication(
-    code: json['code'] as String,
-    nameAr: json['name_ar'] as String,
-    nameEn: (json['name_en'] as String?) ?? json['name_ar'] as String,
-    A1: json['A1'] as String,
-    descriptionAr: json['description_ar'] as String,
-    descriptionEn:
-        (json['description_en'] as String?) ?? json['description_ar'] as String,
-    medicationType: json['medication_type'] as String,
-    instructionsAr: json['instructions_ar'] as String,
-    instructionsEn:
-        (json['instructions_en'] as String?) ??
-        json['instructions_ar'] as String,
-    warningAr: json['warning_ar'] as String?,
-    warningEn: json['warning_en'] as String?,
-    imagePath: (json['image_path'] as String?) ?? '',
-    sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
-    stepsEn: (json['steps_en'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        const [],
-    stepsAr: (json['steps_ar'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        const [],
-    videoUrl: json['video_url'] as String?,
-  );
+  factory Medication.fromJson(Map<String, dynamic> json) {
+    final String code = json['code'] as String;
+
+    // ابحث عن الدواء في الكتالوج المحلي المطابق لنفس الكود
+    final fallbackMedication = medicationCatalog.firstWhere(
+      (m) => m.code == code,
+      orElse: () => Medication(
+        code: code,
+        nameAr: '',
+        nameEn: '',
+        A1: '',
+        descriptionAr: '',
+        descriptionEn: '',
+        medicationType: '',
+        instructionsAr: '',
+        instructionsEn: '',
+        imagePath: '',
+        sortOrder: 0,
+      ),
+    );
+
+    return Medication(
+      code: code,
+      nameAr: json['name_ar'] as String,
+      nameEn: (json['name_en'] as String?) ?? json['name_ar'] as String,
+      A1: (json['A1'] as String?) ??
+          (json['name_en'] as String?) ??
+          (json['name_ar'] as String? ?? ''),
+      descriptionAr: json['description_ar'] as String,
+      descriptionEn:
+          (json['description_en'] as String?) ?? json['description_ar'] as String,
+      medicationType: json['medication_type'] as String,
+      instructionsAr: json['instructions_ar'] as String,
+      instructionsEn:
+          (json['instructions_en'] as String?) ??
+              json['instructions_ar'] as String,
+      warningAr: json['warning_ar'] as String?,
+      warningEn: json['warning_en'] as String?,
+      imagePath: (json['image_path'] as String?) ?? '',
+      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      
+      // سحب الخطوات من الداتا بيس، وإذا كانت فارغة ناخذها من الكتالوج
+      stepsEn: (json['steps_en'] as List?)?.isNotEmpty == true
+          ? (json['steps_en'] as List).map((e) => e.toString()).toList()
+          : fallbackMedication.stepsEn,
+          
+      stepsAr: (json['steps_ar'] as List?)?.isNotEmpty == true
+          ? (json['steps_ar'] as List).map((e) => e.toString()).toList()
+          : fallbackMedication.stepsAr,
+          
+      videoUrl: json['video_url'] as String?,
+    );
+  }
 }
 
 const _mdiStepsEn = [
@@ -131,6 +157,66 @@ const _diskusStepsAr = [
   'ضع الفوهة بين شفتيك (وليس أسنانك) واستنشق بقوة وعمق.',
   'انزع الجهاز واحبس نفسك لمدة 10 ثوانٍ تقريباً.',
   'أخرج الزفير ببطء، ثم أعد مسند الإبهام إلى الخلف لإغلاقه.',
+];
+const _capsuleDpiStepsEn = [
+  'Open the device and place one capsule from the blister into the chamber.',
+  'Close the mouthpiece until it clicks (do not shake).',
+  'Press the piercing button(s) once and release.',
+  'Breathe out fully, away from the inhaler.',
+  'Place the mouthpiece between your teeth and close your lips around it.',
+  'Breathe in quickly and deeply — you should hear the capsule vibrate.',
+  'Hold your breath for 5-10 seconds, then remove the inhaler from your mouth.',
+  'Check the capsule is empty; if not, repeat the inhalation.',
+  'Discard the empty capsule and close the mouthpiece.',
+];
+const _capsuleDpiStepsAr = [
+  'افتح الجهاز وضع كبسولة واحدة من الشريط في الحجرة.',
+  'أغلق القطعة الفموية حتى تسمع نقرة (لا ترجّه).',
+  'اضغط زر (أزرار) الثقب مرة واحدة ثم حرره.',
+  'ازفر بالكامل بعيداً عن الجهاز.',
+  'ضع القطعة الفموية بين أسنانك وأغلق شفتيك حولها.',
+  'استنشق بسرعة وعمق — يجب أن تسمع اهتزاز الكبسولة.',
+  'احبس نفسك لمدة 5-10 ثوانٍ ثم أخرج الجهاز من فمك.',
+  'تحقق من أن الكبسولة فارغة؛ إذا لم تكن، كرّر الاستنشاق.',
+  'تخلص من الكبسولة الفارغة وأغلق القطعة الفموية.',
+];
+
+const _elpenhalerStepsEn = [
+  'Hold the inhaler with one hand and pull the lever fully out, then push it back in to load a dose.',
+  'Breathe out fully, away from the mouthpiece.',
+  'Place the mouthpiece between your lips and close them to form a good seal.',
+  'Breathe in quickly and deeply through the mouthpiece.',
+  'Remove the inhaler and hold your breath for about 10 seconds.',
+  'Breathe out slowly, away from the mouthpiece.',
+];
+const _elpenhalerStepsAr = [
+  'أمسك الجهاز بيد واسحب الذراع بالكامل للخارج ثم أعده للداخل لتحميل الجرعة.',
+  'ازفر بالكامل بعيداً عن القطعة الفموية.',
+  'ضع القطعة الفموية بين شفتيك وأغلقهما لتكوين إغلاق محكم.',
+  'استنشق بسرعة وعمق من خلال القطعة الفموية.',
+  'أخرج الجهاز واحبس نفسك لنحو 10 ثوانٍ.',
+  'أخرج الزفير ببطء بعيداً عن القطعة الفموية.',
+];
+
+const _easyhalerStepsEn2 = [
+  'Hold the inhaler upright and shake it 3 to 5 times.',
+  'Press down once on the coloured button until you hear a click, then release.',
+  'Breathe out slowly, away from the inhaler.',
+  'Place the mouthpiece between your teeth and close your lips around it.',
+  'Breathe in quickly and deeply.',
+  'Hold your breath for 5-10 seconds, then remove the inhaler from your mouth.',
+  'Breathe out gently, away from the inhaler.',
+  'Replace the mouthpiece cover after use.',
+];
+const _easyhalerStepsAr2 = [
+  'أمسك الجهاز بشكل عمودي ورجّه من 3 إلى 5 مرات.',
+  'اضغط مرة واحدة على الزر الملوّن حتى تسمع نقرة ثم حرره.',
+  'ازفر ببطء بعيداً عن الجهاز.',
+  'ضع القطعة الفموية بين أسنانك وأغلق شفتيك حولها.',
+  'استنشق بسرعة وعمق.',
+  'احبس نفسك لمدة 5-10 ثوانٍ ثم أخرج الجهاز من فمك.',
+  'ازفر بلطف بعيداً عن الجهاز.',
+  'أعد غطاء القطعة الفموية بعد الاستخدام.',
 ];
 
 const medicationCatalog = <Medication>[
@@ -302,6 +388,195 @@ const medicationCatalog = <Medication>[
     sortOrder: 8,
     stepsEn: _mdiStepsEn,
     stepsAr: _mdiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'salres',
+    nameAr: 'سالريس',
+    nameEn: 'Salres',
+    A1: 'Salres',
+    descriptionAr: 'بخاخ منقذ (أزرق)',
+    descriptionEn: 'Rescue inhaler (blue)',
+    medicationType: 'emergency',
+    instructionsAr: 'يستخدم هذا الدواء عند الحاجة فقط.',
+    instructionsEn: 'Use this medicine only when needed.',
+    warningAr:
+        'لا يوجد جدول زمني ثابت لهذا الدواء. يُستخدم عند الشعور بالأعراض أو قبل ممارسة الرياضة حسب تعليمات الطبيب.',
+    warningEn:
+        'There is no fixed schedule. Use it when symptoms occur or before exercise as directed by your doctor.',
+    imagePath: 'assets/images/medications/salres.jpg',
+    sortOrder: 9,
+    stepsEn: _mdiStepsEn,
+    stepsAr: _mdiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'brontio',
+    nameAr: 'برونتيو',
+    nameEn: 'Brontio',
+    A1: 'Brontio',
+    descriptionAr: 'كبسولات استنشاق - موسّع قصبي طويل المفعول',
+    descriptionEn: 'Inhalation capsules - long-acting bronchodilator',
+    medicationType: 'preventer',
+    instructionsAr:
+        'تُستخدم كبسولة واحدة يومياً عبر جهاز الاستنشاق المرفق حسب وصف الطبيب.',
+    instructionsEn:
+        'Use one capsule daily through the supplied inhalation device as prescribed.',
+    warningAr: 'لا تبتلع الكبسولة؛ فهي للاستنشاق فقط.',
+    warningEn: 'Do not swallow the capsule; it is for inhalation only.',
+    imagePath: 'assets/images/medications/brontio.jpg',
+    sortOrder: 10,
+    stepsEn: _capsuleDpiStepsEn,
+    stepsAr: _capsuleDpiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'respiramol',
+    nameAr: 'ريسبيرامول',
+    nameEn: 'Respiramol',
+    A1: 'Respiramol',
+    descriptionAr: 'كبسولات استنشاق مركبة (بوديزونيد + فورموتيرول)',
+    descriptionEn: 'Combination inhalation capsules (Budesonide + Formoterol)',
+    medicationType: 'preventer',
+    instructionsAr: 'تُستخدم بانتظام حسب الجرعة والجدول الذي حدده الطبيب.',
+    instructionsEn: 'Use regularly at the dose and schedule set by your doctor.',
+    warningAr: 'تمضمض بعد الاستخدام ولا توقفه دون استشارة الطبيب.',
+    warningEn:
+        'Rinse your mouth after use and do not stop without medical advice.',
+    imagePath: 'assets/images/medications/respiramol.jpg',
+    sortOrder: 11,
+    stepsEn: _capsuleDpiStepsEn,
+    stepsAr: _capsuleDpiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'pralas',
+    nameAr: 'برالاس',
+    nameEn: 'Pralas',
+    A1: 'Pralas',
+    descriptionAr: 'بخاخ موسّع للشعب الهوائية (مركب)',
+    descriptionEn: 'Combination bronchodilator inhaler',
+    medicationType: 'emergency',
+    instructionsAr: 'يُستخدم حسب تعليمات الطبيب عند ضيق التنفس.',
+    instructionsEn: 'Use as directed for breathing difficulty.',
+    warningAr: 'تجنب وصول الرذاذ إلى العينين.',
+    warningEn: 'Avoid spraying into the eyes.',
+    imagePath: 'assets/images/medications/pralas.jpg',
+    sortOrder: 12,
+    stepsEn: _mdiStepsEn,
+    stepsAr: _mdiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'pulmoton',
+    nameAr: 'بولموتون',
+    nameEn: 'Pulmoton',
+    A1: 'Pulmoton',
+    descriptionAr: 'مسحوق استنشاق مركب (Elpenhaler)',
+    descriptionEn: 'Combination inhalation powder (Elpenhaler)',
+    medicationType: 'preventer',
+    instructionsAr: 'يُستخدم بانتظام حسب الجرعة الموصوفة.',
+    instructionsEn: 'Use regularly at the prescribed dose.',
+    warningAr: 'تمضمض بعد كل جرعة.',
+    warningEn: 'Rinse your mouth after each dose.',
+    imagePath: 'assets/images/medications/pulmoton.jpg',
+    sortOrder: 13,
+    stepsEn: _elpenhalerStepsEn,
+    stepsAr: _elpenhalerStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'rolenium',
+    nameAr: 'رولينيوم',
+    nameEn: 'Rolenium',
+    A1: 'Rolenium',
+    descriptionAr: 'مسحوق استنشاق مركب (Elpenhaler)',
+    descriptionEn: 'Combination inhalation powder (Elpenhaler)',
+    medicationType: 'preventer',
+    instructionsAr: 'يُستخدم بانتظام صباحاً ومساءً حسب الخطة العلاجية.',
+    instructionsEn: 'Use regularly morning and evening according to your plan.',
+    warningAr: 'ليس بديلاً عن بخاخ الإنقاذ أثناء النوبة الحادة.',
+    warningEn: 'It does not replace a rescue inhaler during an acute attack.',
+    imagePath: 'assets/images/medications/rolenium.jpg',
+    sortOrder: 14,
+    stepsEn: _elpenhalerStepsEn,
+    stepsAr: _elpenhalerStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'airtide',
+    nameAr: 'إيرتايد',
+    nameEn: 'Airtide',
+    A1: 'Airtide',
+    descriptionAr: 'كبسولات استنشاق مركبة جاهزة الجرعة',
+    descriptionEn: 'Pre-metered combination inhalation capsules',
+    medicationType: 'preventer',
+    instructionsAr: 'تُستخدم بانتظام حسب الجرعة الموصوفة.',
+    instructionsEn: 'Use regularly at the prescribed dose.',
+    warningAr: 'تمضمض بعد كل جرعة.',
+    warningEn: 'Rinse your mouth after each dose.',
+    imagePath: 'assets/images/medications/airtide.jpg',
+    sortOrder: 15,
+    stepsEn: _capsuleDpiStepsEn,
+    stepsAr: _capsuleDpiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'foracort',
+    nameAr: 'فوراكورت',
+    nameEn: 'Foracort',
+    A1: 'Foracort',
+    descriptionAr: 'بخاخ مركب بعداد جرعات',
+    descriptionEn: 'Combination inhaler with dose counter',
+    medicationType: 'preventer',
+    instructionsAr:
+        'استخدم الجرعة الموصوفة بانتظام وبطريقة الاستنشاق الصحيحة.',
+    instructionsEn:
+        'Use the prescribed dose regularly with correct inhalation technique.',
+    warningAr: 'تحقق من عداد الجرعات قبل كل استخدام.',
+    warningEn: 'Check the dose counter before each use.',
+    imagePath: 'assets/images/medications/foracort.jpg',
+    sortOrder: 16,
+    stepsEn: _mdiStepsEn,
+    stepsAr: _mdiStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'pulmicort',
+    nameAr: 'بولميكورت',
+    nameEn: 'Pulmicort',
+    A1: 'Pulmicort',
+    descriptionAr: 'مسحوق جاف توربوهيلر',
+    descriptionEn: 'Dry powder inhaler (Turbuhaler)',
+    medicationType: 'preventer',
+    instructionsAr:
+        'يُستخدم يومياً حسب وصف الطبيب للسيطرة على التهاب مجاري التنفس.',
+    instructionsEn: 'Use daily as prescribed to control airway inflammation.',
+    warningAr: 'تمضمض بعد الاستخدام ولا توقفه دون استشارة الطبيب.',
+    warningEn:
+        'Rinse your mouth after use and do not stop without medical advice.',
+    imagePath: 'assets/images/medications/pulmicort.jpg',
+    sortOrder: 17,
+    stepsEn: _turbuhalerStepsEn,
+    stepsAr: _turbuhalerStepsAr,
+    videoUrl: null,
+  ),
+  Medication(
+    code: 'fobumix',
+    nameAr: 'فوبوميكس',
+    nameEn: 'Fubumix',
+    A1: 'Fubumix',
+    descriptionAr: 'مسحوق جاف Easyhaler مركب',
+    descriptionEn: 'Combination dry powder inhaler (Easyhaler)',
+    medicationType: 'preventer',
+    instructionsAr: 'تُستخدم بانتظام حسب الجرعة الموصوفة.',
+    instructionsEn: 'Use regularly at the prescribed dose.',
+    warningAr: 'رجّ الجهاز جيداً قبل كل استخدام.',
+    warningEn: 'Shake the device well before each use.',
+    imagePath: 'assets/images/medications/fobumix.jpg',
+    sortOrder: 18,
+    stepsEn: _easyhalerStepsEn2,
+    stepsAr: _easyhalerStepsAr2,
     videoUrl: null,
   ),
 ];

@@ -1,9 +1,11 @@
 <key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
     <array>
-      <string>io.supabase.asthmacare</string>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>asthmacare</string>
+            </array>
+        </dict>
     </array>
-  </dict>
-</array>

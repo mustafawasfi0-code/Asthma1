@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// مسحنا استدعاء مكتبة dotenv
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/app_state.dart';
 import 'core/app_theme.dart';
@@ -9,13 +9,10 @@ import 'services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await dotenv.load(fileName: '.env');
-    await SupabaseService.initialize();
-  } catch (error, stackTrace) {
-    debugPrint('Startup service error: $error');
-    debugPrintStack(stackTrace: stackTrace);
-  }
+  
+  // شغلنا السوبابيس مباشرة بدون ملف الـ .env
+  await SupabaseService.initialize();
+  
   await AppState.instance.load();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -26,6 +23,7 @@ Future<void> main() async {
 
 class AsthmaCareApp extends StatelessWidget {
   const AsthmaCareApp({super.key});
+  
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: AppState.instance,
