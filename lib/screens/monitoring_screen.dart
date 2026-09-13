@@ -204,6 +204,27 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
 
   void _skip() => _goNext();
 
+  /// Clears any in-progress symptom selections and moves straight to the
+  /// next page, used by the "No symptoms" button.
+  void _noSymptoms() {
+    setState(() {
+      selectedSymptoms.clear();
+      symptomSeverities.clear();
+      symptomNote.clear();
+    });
+    _goNext();
+  }
+
+  /// Clears any in-progress trigger selections and moves straight to the
+  /// next page, used by the "No triggers" button.
+  void _noTriggers() {
+    setState(() {
+      selectedTriggers.clear();
+      customTrigger.clear();
+    });
+    _goNext();
+  }
+
   @override
   Widget build(BuildContext context) => Directionality(
     textDirection: AppState.instance.arabic
@@ -403,6 +424,20 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                     ? null
                     : _saveSymptoms,
               ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('no_symptoms'),
+                  onPressed: saving ? null : _noSymptoms,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: Text(appText('No symptoms', 'لا توجد أعراض')),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF087CF0),
+                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -569,6 +604,20 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                 key: const ValueKey('save_triggers'),
                 text: appText('Save & Continue', 'حفظ ومتابعة'),
                 onPressed: saving ? null : _saveTriggers,
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('no_triggers'),
+                  onPressed: saving ? null : _noTriggers,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: Text(appText('No triggers', 'لا توجد مهيجات')),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF087CF0),
+                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  ),
+                ),
               ),
             ],
           ),
