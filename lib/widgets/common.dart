@@ -117,14 +117,13 @@ class AppNav extends StatelessWidget {
       (Icons.person_outline, Icons.person, appText('Profile', 'الملف')),
     ];
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE7EDF2))),
+      decoration: BoxDecoration(
+        color: AppColors.darkGreen,
         boxShadow: [
           BoxShadow(
-            color: Color(0x0D101828),
-            blurRadius: 12,
-            offset: Offset(0, -3),
+            color: AppColors.darkGreen.withValues(alpha: .28),
+            blurRadius: 14,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -136,23 +135,34 @@ class AppNav extends StatelessWidget {
             children: List.generate(items.length, (index) {
               final item = items[index];
               final active = selected == index;
-              final color = active
-                  ? const Color(0xFF0787F7)
-                  : const Color(0xFF4B5563);
               return Expanded(
                 child: InkWell(
                   onTap: () => context.go(routes[index]),
-                  splashColor: const Color(0x170787F7),
-                  highlightColor: const Color(0x0D0787F7),
+                  splashColor: Colors.white.withValues(alpha: .08),
+                  highlightColor: Colors.white.withValues(alpha: .04),
                   child: Padding(
                     padding: const EdgeInsets.only(top: 9, bottom: 6),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          active ? item.$2 : item.$1,
-                          color: color,
-                          size: 25,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? AppColors.green
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            active ? item.$2 : item.$1,
+                            color: active
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: .6),
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -160,8 +170,10 @@ class AppNav extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: color,
-                            fontSize: 11.5,
+                            color: active
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: .6),
+                            fontSize: 11,
                             height: 1,
                             fontWeight: active
                                 ? FontWeight.w800

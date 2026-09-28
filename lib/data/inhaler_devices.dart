@@ -14,6 +14,7 @@ class InhalerDevice {
     required this.stepsAr,
     this.noteEn,
     this.noteAr,
+    this.criticalStepIndexes = const {},
   });
 
   final String id;
@@ -30,6 +31,13 @@ class InhalerDevice {
   final List<String> stepsAr;
   final String? noteEn;
   final String? noteAr;
+
+  /// Indices into [stepsEn] / [stepsAr] (they're index-aligned) that
+  /// diagram 3's weighted scoring treats as critical: priming/dose-
+  /// loading, lip seal, the main inhale, and breath-hold. Tagged via
+  /// keyword matching against the English step text -- see the
+  /// per-device review list shared alongside this file.
+  final Set<int> criticalStepIndexes;
 }
 
 class InhalerTip {
@@ -84,9 +92,7 @@ const inhalerGeneralTips = <InhalerTip>[
   ),
 ];
 
-const inhalerDevices = <InhalerDevice>[
-  // Manually actuated pressurised metered-dose inhaler (pMDI)
-  InhalerDevice(
+const inhalerDevices = <InhalerDevice>[  InhalerDevice(
     id: 'pmdi-alone',
     nameEn: 'pMDI alone',
     nameAr: 'بخاخ pMDI بمفرده',
@@ -97,6 +103,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: true,
     quickBreath: false,
+    criticalStepIndexes: {1, 3, 4, 5},
     stepsEn: [
       'Remove inhaler cap',
       'Hold inhaler upright and shake well',
@@ -133,6 +140,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: true,
     quickBreath: false,
+    criticalStepIndexes: {2, 3, 6},
     stepsEn: [
       'Prepare the spacer',
       'Remove inhaler cap',
@@ -175,6 +183,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: true,
     quickBreath: false,
+    criticalStepIndexes: {3, 5, 6, 7},
     stepsEn: [
       'Open Haleraid and pop inhaler in',
       'Press the inhaler in (allowing you to squeeze)',
@@ -217,6 +226,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: true,
     quickBreath: false,
+    criticalStepIndexes: {1, 2, 4, 5, 6},
     stepsEn: [
       'Remove cap',
       'Hold inhaler upright and shake well',
@@ -259,6 +269,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: false,
+    criticalStepIndexes: {1, 4, 5, 7},
     stepsEn: [
       'Hold inhaler upright with the cap closed',
       'Turn base in direction of arrows until it clicks (half a turn)',
@@ -305,6 +316,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {1, 3, 4, 5},
     stepsEn: [
       'Open cover using thumb grip',
       'Load dose: keep device horizontal while sliding lever until it clicks (do not shake)',
@@ -341,6 +353,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {1, 3, 4, 5},
     stepsEn: [
       'Open cover using thumb grip',
       'Load dose: keep device horizontal while sliding lever until it clicks (do not shake)',
@@ -377,6 +390,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {0, 2, 3, 4},
     stepsEn: [
       'Load dose: slide the cover down until you hear a click (do not shake)',
       'Breathe out slowly and gently, away from inhaler until your lungs feel empty',
@@ -417,6 +431,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: true,
     quickBreath: true,
+    criticalStepIndexes: {2, 3, 5, 6, 7},
     stepsEn: [
       'Hold upright with mouthpiece cover at the bottom',
       'Remove the mouthpiece cover',
@@ -457,6 +472,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {2, 5, 6, 7},
     stepsEn: [
       'Remove cap by squeezing arrows and pulling outwards',
       'Hold inhaler horizontally so large coloured button is facing straight up',
@@ -499,6 +515,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {1, 3, 4, 5},
     stepsEn: [
       'Hold inhaler upright with mouthpiece cover at the bottom',
       'Open the mouthpiece cover downwards until it clicks',
@@ -535,6 +552,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: true,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {1, 3, 4, 5},
     stepsEn: [
       'Unscrew and remove cover',
       'Keep inhaler upright and twist grip at the base around and then back until click is heard',
@@ -573,6 +591,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {4, 6, 7, 8},
     stepsEn: [
       'Remove cap',
       'Flip open mouthpiece',
@@ -619,6 +638,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {4, 6, 7, 8},
     stepsEn: [
       'Open cap',
       'Flip open mouthpiece',
@@ -663,6 +683,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {4, 6, 7, 8},
     stepsEn: [
       'Open cap',
       'Flip open mouthpiece',
@@ -707,6 +728,7 @@ const inhalerDevices = <InhalerDevice>[
     hasDoseCounter: false,
     requiresShaking: false,
     quickBreath: true,
+    criticalStepIndexes: {4, 7, 8, 9},
     stepsEn: [
       'Open cap',
       'Flip open mouthpiece',

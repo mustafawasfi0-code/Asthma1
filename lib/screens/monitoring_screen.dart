@@ -28,7 +28,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   final customTrigger = TextEditingController();
   final pageScroll = ScrollController();
 
-  // Page flow: 0 = symptoms, 1 = triggers, 2 = peak flow.
+  // Page flow: 0 = symptoms, 1 = adherence, 2 = technique, 3 = triggers, 4 = peak flow.
   late int pageIndex;
   late final PageController _flowController;
 
@@ -39,6 +39,11 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   final selectedSymptoms = <String>{};
   final Map<String, double> symptomSeverities = {};
   final selectedTriggers = <String>{};
+  
+  // New variables for Diagram 2
+  String? adherenceLevel;
+  final checkedTechniqueSteps = <int>{};
+
   List<Map<String, dynamic>> peakLogs = [], symptomLogs = [], triggerLogs = [];
 
   static const symptoms = {
@@ -50,6 +55,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     'Chest pain': 'ألم صدر',
     'Other': 'أخرى',
   };
+  
   static const triggers = {
     'Dust & Sandstorms': 'الغبار والعواصف الترابية',
     'Smoke & Tobacco': 'الدخان والتدخين',
@@ -60,6 +66,27 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     'Pollen': 'حبوب اللقاح والنباتات',
     'Stress & Emotions': 'التوتر والمشاعر القوية',
   };
+
+  static const adherenceOptions = {
+    'good': 'جيد',
+    'fair': 'متوسط',
+    'poor': 'ضعيف',
+    'none': 'معدوم',
+  };
+
+  static const techniqueStepsEn = [
+    'Prime and prepare the inhaler',
+    'Form a tight lip seal around the mouthpiece',
+    'Coordinate inhalation with pressing',
+    'Hold breath for 5-10 seconds',
+  ];
+
+  static const techniqueStepsAr = [
+    'رج وتجهيز البخاخ (Priming)',
+    'إغلاق الشفتين بإحكام حول الفوهة (Lip seal)',
+    'تنسيق الاستنشاق مع الضغط (Inhale coordination)',
+    'كتم النفس لـ 5-10 ثوانٍ (Breath-hold)',
+  ];
 
   @override
   void initState() {
@@ -77,16 +104,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     }
   }
 
-  // `initialTab` keeps its old meaning (0 = peak flow / default,
-  // 1 = symptoms, 2 = triggers) so app_router.dart and the Home screen's
-  // quick-action buttons don't need to change. This just maps that old
-  // index onto the new page order.
- int _mapInitialTab(int oldTab) => switch (oldTab) {
-  1 => 0, // symptoms (explicit ?tab=symptoms)
-  2 => 1, // triggers (explicit ?tab=triggers)
-  3 => 2, // peak flow (explicit ?tab=peak-flow or ?tab=inhaler)
-  _ => 0, // no param at all — bottom nav bar → start at Symptoms
-};
+  int _mapInitialTab(int oldTab) => switch (oldTab) {
+        1 => 0, // symptoms
+        2 => 3, // triggers
+        3 => 4, // peak flow
+        _ => 0, // default
+      };
 
   @override
   void didUpdateWidget(covariant MonitoringScreen oldWidget) {
@@ -185,7 +208,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   // --- Page flow navigation -------------------------------------------
 
   void _goNext() {
-    if (pageIndex < 2) {
+    if (pageIndex < 4) {
       _flowController.nextPage(
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOut,
@@ -202,27 +225,30 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     }
   }
 
-  void _skip() => _goNext();
+  void _skip() {
+    if (pageIndex == 3) {
+      _flowController.jumpToPage(4); // Triggers -> PEF
+    } else {
+      _goNext();
+    }
+  }
 
-  /// Clears any in-progress symptom selections and moves straight to the
-  /// next page, used by the "No symptoms" button.
   void _noSymptoms() {
     setState(() {
       selectedSymptoms.clear();
       symptomSeverities.clear();
       symptomNote.clear();
     });
-    _goNext();
+    // Diagram 2: Skip straight to PEF Check
+    _flowController.jumpToPage(4);
   }
 
-  /// Clears any in-progress trigger selections and moves straight to the
-  /// next page, used by the "No triggers" button.
   void _noTriggers() {
     setState(() {
       selectedTriggers.clear();
       customTrigger.clear();
     });
-    _goNext();
+    _flowController.jumpToPage(4);
   }
 
   @override
@@ -280,6 +306,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                     onPageChanged: (index) => setState(() => pageIndex = index),
                     children: [
                       _symptomsPage(),
+                      _adherencePage(),
+                      _techniquePage(),
                       _triggersPage(),
                       _pefPage(),
                     ],
@@ -297,17 +325,19 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   Widget _stepProgress() {
     final labels = [
       appText('Symptoms', 'الأعراض'),
-      appText('Triggers', 'مهيجات الربو'),
-      appText('Peak Flow', 'تدفق النفس'),
+      appText('Meds', 'الأدوية'),
+      appText('Technique', 'البخاخ'),
+      appText('Triggers', 'المهيجات'),
+      appText('PEF', 'التدفق'),
     ];
     return Column(
       children: [
         Row(
-          children: List.generate(3, (i) {
+          children: List.generate(5, (i) {
             final reached = i <= pageIndex;
             return Expanded(
               child: Container(
-                margin: EdgeInsetsDirectional.only(end: i < 2 ? 6 : 0),
+                margin: EdgeInsetsDirectional.only(end: i < 4 ? 4 : 0),
                 height: 5,
                 decoration: BoxDecoration(
                   color: reached
@@ -321,18 +351,14 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         ),
         const SizedBox(height: 8),
         Row(
-          children: List.generate(3, (i) {
+          children: List.generate(5, (i) {
             final active = i == pageIndex;
             return Expanded(
               child: Text(
                 labels[i],
-                textAlign: i == 0
-                    ? TextAlign.start
-                    : i == 2
-                    ? TextAlign.end
-                    : TextAlign.center,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                   color: active ? const Color(0xFF087CF0) : AppColors.muted,
                 ),
@@ -482,12 +508,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   }) {
     const emojis = ['😄', '🙂', '😐', '😕', '😣', '😫'];
     const colors = [
-      Color(0xFF00C853), // 0 - good (green)
+      Color(0xFF00C853),
       Color(0xFF64DD17),
       Color(0xFFFFD600),
       Color(0xFFFF9100),
       Color(0xFFFF3D00),
-      Color(0xFFD50000), // 5 - bad (red)
+      Color(0xFFD50000),
     ];
     final index = value.round().clamp(0, 5);
 
@@ -560,13 +586,166 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           notes: symptomNote.text,
         );
       }
-      selectedSymptoms.clear();
-      symptomSeverities.clear();
-      symptomNote.clear();
       if (mounted) setState(() {});
     });
     if (success) _goNext();
   }
+
+  // --- Adherence page ----------------------------------------
+  
+  Widget _adherencePage() => SingleChildScrollView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+    child: Column(
+      children: [
+        _sectionHeader(
+          Icons.medication_outlined,
+          appText('Adherence', 'الالتزام بالأدوية'),
+          appText('Preventer inhaler use', 'استخدام البخاخ الوقائي'),
+        ),
+        const SizedBox(height: 18),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appText('How often do you take your preventer inhaler?', 'ما مدى التزامك بأخذ البخاخ الوقائي؟'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: adherenceOptions.entries.map((e) {
+                  final active = adherenceLevel == e.key;
+                  return ChoiceChip(
+                    selected: active,
+                    label: Text(AppState.instance.arabic ? e.value : e.key),
+                    onSelected: (_) => setState(() => adherenceLevel = e.key),
+                    selectedColor: const Color(0xFFDCEEFF),
+                    backgroundColor: Colors.white,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+              if (adherenceLevel != null && adherenceLevel != 'good') ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7DA),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFD400)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Color(0xFFD89A00)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          appText(
+                            'Consistent use of preventer medicine is the best way to avoid asthma symptoms. Try setting a daily alarm.',
+                            'الاستخدام المستمر للبخاخ الوقائي هو أفضل طريقة لتجنب نوبات الربو. حاول ضبط منبه يومي للتذكير.',
+                          ),
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF5A4400)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+              PrimaryButton(
+                text: appText('Continue', 'متابعة'),
+                onPressed: adherenceLevel == null ? null : _goNext,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  // --- Technique page ----------------------------------------
+  
+  Widget _techniquePage() => SingleChildScrollView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+    child: Column(
+      children: [
+        _sectionHeader(
+          Icons.accessibility_new_rounded,
+          appText('Technique', 'طريقة الاستخدام'),
+          appText('Check your inhaler usage', 'تأكد من استخدامك للبخاخ'),
+        ),
+        const SizedBox(height: 18),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appText('Did you follow these critical steps?', 'هل قمت بهذه الخطوات الأساسية عند استخدام البخاخ؟'),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              ...List.generate(techniqueStepsEn.length, (index) {
+                final isChecked = checkedTechniqueSteps.contains(index);
+                return CheckboxListTile(
+                  value: isChecked,
+                  title: Text(
+                    AppState.instance.arabic ? techniqueStepsAr[index] : techniqueStepsEn[index],
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      if (val == true) {
+                        checkedTechniqueSteps.add(index);
+                      } else {
+                        checkedTechniqueSteps.remove(index);
+                      }
+                    });
+                  },
+                  activeColor: const Color(0xFF087CF0),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                );
+              }),
+              const SizedBox(height: 10),
+              if (checkedTechniqueSteps.length < techniqueStepsEn.length && checkedTechniqueSteps.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE5E8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE11D35)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D35)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          appText(
+                            'Missing critical steps reduces the medicine you receive. Please review your inhaler instructions.',
+                            'نسيان الخطوات الأساسية يقلل من كمية الدواء اللي توصل للرئة. يرجى مراجعة تعليمات استخدام بخاخك.',
+                          ),
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF9D0615)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+              PrimaryButton(
+                text: appText('Continue', 'متابعة'),
+                onPressed: () => _goNext(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 
   // --- Triggers page -------------------------------------------------
 
@@ -906,6 +1085,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
 
   Future<void> _savePef() async {
     var saved = false;
+    
+    // Evaluate conditions for Diagram 4 & 5 before clearing states
+    final bool currentHasSymptoms = selectedSymptoms.isNotEmpty;
+    final String? currentAdherence = adherenceLevel;
+    final bool currentHasTriggers = selectedTriggers.isNotEmpty || customTrigger.text.trim().isNotEmpty;
+
     await _save(() async {
       final values = readings.map((c) => int.tryParse(c.text.trim())).toList();
       if (values.any((v) => v == null) || values.length != 3) {
@@ -932,7 +1117,13 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         pageBuilder: (dialogContext, animation, secondaryAnimation) =>
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 4.5, sigmaY: 4.5),
-              child: PeakFlowResultDialog(assessment: assessment),),
+              child: PeakFlowResultDialog(
+                assessment: assessment,
+                hasSymptoms: currentHasSymptoms,
+                adherenceLevel: currentAdherence,
+                hasTriggers: currentHasTriggers,
+              ),
+            ),
         transitionBuilder:
             (dialogContext, animation, secondaryAnimation, child) =>
                 FadeTransition(
@@ -1076,7 +1267,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       ),
       if (trailing != null)
         trailing
-      else if (pageIndex < 2)
+      else if (pageIndex < 4)
         TextButton(
           onPressed: _skip,
           child: Text(appText('Skip', 'تخطي')),
@@ -1521,9 +1712,18 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
 }
 
 class PeakFlowResultDialog extends StatefulWidget {
-  const PeakFlowResultDialog({super.key, required this.assessment});
+  const PeakFlowResultDialog({
+    super.key, 
+    required this.assessment,
+    required this.hasSymptoms,
+    required this.adherenceLevel,
+    required this.hasTriggers,
+  });
 
   final PeakFlowAssessment assessment;
+  final bool hasSymptoms;
+  final String? adherenceLevel;
+  final bool hasTriggers;
 
   @override
   State<PeakFlowResultDialog> createState() => _PeakFlowResultDialogState();
@@ -1537,7 +1737,9 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
   void initState() {
     super.initState();
     assessment = widget.assessment;
-  }Future<void> _enterPersonalBest() async {
+  }
+  
+  Future<void> _enterPersonalBest() async {
     final controller = TextEditingController();
     String? validationError;
     final value = await showDialog<int>(
@@ -1620,6 +1822,14 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
   @override
   Widget build(BuildContext context) {
     final zone = assessment.zone;
+    final percentage = assessment.percentage?.round();
+    
+    // Evaluate Diagram 4 & 5 conditions
+    final bool showPossibleCauses = widget.hasSymptoms && (percentage != null && percentage >= 80);
+    final bool showComboGuidance = widget.hasSymptoms && 
+        (widget.adherenceLevel == 'poor' || widget.adherenceLevel == 'none') && 
+        widget.hasTriggers;
+
     final color = switch (zone) {
       PeakFlowZone.green => const Color(0xFF0BA957),
       PeakFlowZone.yellow => const Color(0xFFF2B400),
@@ -1685,7 +1895,6 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
         'افتح الملف الشخصي وأدخل أفضل رقم شخصي صحيح.',
       ),
     };
-    final percentage = assessment.percentage?.round();
 
     return Directionality(
       textDirection: AppState.instance.arabic
@@ -1744,7 +1953,8 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (zone == PeakFlowZone.red) ...[Container(
+                    if (zone == PeakFlowZone.red) ...[
+                      Container(
                         width: 22,
                         height: 22,
                         decoration: BoxDecoration(
@@ -1886,6 +2096,87 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                   ),
                 ),
                 const SizedBox(height: 11),
+                
+                // --- Diagram 4: Possible Causes Card ---
+                if (showPossibleCauses) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7DA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFD400)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.search, color: Color(0xFFD89A00), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              appText('Possible Causes', 'الأسباب المحتملة'),
+                              style: const TextStyle(
+                                color: Color(0xFF996B00),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          appText(
+                            'Your breathing score is good, but you reported symptoms. This could be due to recent triggers or inhaler technique. Please review your steps.',
+                            'قراءة تنفسك جيدة، لكنك تعاني من أعراض. قد يكون السبب التعرض لمهيجات أو طريقة استخدام البخاخ. يرجى مراجعة خطواتك.',
+                          ),
+                          style: const TextStyle(color: Color(0xFF5A4400), fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // --- Diagram 5: Combo Guidance Card ---
+                if (showComboGuidance) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE5E8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE11D35)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D35), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              appText('Action Required', 'إجراء مطلوب'),
+                              style: const TextStyle(
+                                color: Color(0xFFAD0010),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          appText(
+                            'You have symptoms after trigger exposure, and preventer use is low. Check your GINA plan immediately.',
+                            'لديك أعراض بعد التعرض لمهيج، والتزامك بالبخاخ الوقائي ضعيف. راجع خطة GINA فوراً لتجنب نوبة الربو.',
+                          ),
+                          style: const TextStyle(color: Color(0xFF9D0615), fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
                 Container(
                   width: double.infinity,
                   constraints: const BoxConstraints(minHeight: 96),

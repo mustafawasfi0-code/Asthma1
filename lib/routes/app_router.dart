@@ -188,6 +188,11 @@ final appRouter = GoRouter(
       path: '/onboarding/triggers',
       builder: (context, state) => const TriggersScreen(),
     ),
+    GoRoute(
+      path: '/onboarding/pef-result',
+      builder: (context, state) =>
+          _LanguageRefresh(builder: (_) => const PefResultScreen()),
+    ),
     
   ],
 );

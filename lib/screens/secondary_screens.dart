@@ -113,6 +113,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         sex: current.sex,
         heightCm: current.heightCm,
         personalBest: personalBestValue,
+        // Without this, saving the profile (e.g. just to update Personal
+        // Best) would silently wipe out any triggers the patient has
+        // confirmed, since Profile() now defaults triggers to [].
+        triggers: current.triggers,
         doctorName: doctorName.text.trim().isEmpty
             ? null
             : doctorName.text.trim() == lastPresentedDoctorName

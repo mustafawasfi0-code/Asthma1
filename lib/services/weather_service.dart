@@ -29,7 +29,7 @@ class WeatherService {
       final uri = Uri.parse(
         'https://api.open-meteo.com/v1/forecast'
         '?latitude=$lat&longitude=$lon'
-        '&current=temperature_2m,weather_code&timezone=auto',
+        '&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto',
       );
       final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) {
@@ -39,6 +39,7 @@ class WeatherService {
       final current = body['current'] as Map<String, dynamic>?;
       final temperature = (current?['temperature_2m'] as num?)?.toDouble();
       final code = (current?['weather_code'] as num?)?.toInt();
+      final wind = (current?['wind_speed_10m'] as num?)?.toDouble();
       if (temperature == null) {
         return const WeatherStatus(state: WeatherState.unavailable);
       }
@@ -47,6 +48,7 @@ class WeatherService {
         temperatureC: temperature,
         weatherCode: code,
         cityLabel: fallbackCity,
+        windKmh: wind,
       );
     } on TimeoutException {
       return const WeatherStatus(state: WeatherState.noInternet);

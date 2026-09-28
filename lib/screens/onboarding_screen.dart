@@ -15,13 +15,18 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 /// Single progress scale shared by every onboarding screen so the bar reads
 /// as one continuous journey instead of resetting between sections.
 ///
-/// Units: 4 profile steps (name, city, age/sex, height) + medications
-/// selection + medication info (interpolated across however many medicines
-/// were selected) + triggers + emergency contact = 7 total units.
+/// Used by the medication and emergency-contact screens (which are now
+/// reached from Home / Profile, not from first-run setup). The first-run
+/// flow (Profile > Triggers > Expected PEF) uses [_setupProgress] below.
 const int _onboardingTotalSteps = 7;
 
 double _onboardingProgress(int completedSteps, {double fraction = 0}) =>
     (completedSteps + fraction) / _onboardingTotalSteps;
+
+/// Progress for the first-run setup flow:
+/// 1 = Profile, 2 = Triggers, 3 = Expected PEF result.
+const int _setupTotalSteps = 3;
+double _setupProgress(int step) => step / _setupTotalSteps;
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -31,7 +36,6 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  int step = 0;
   bool loading = false;
   String? error;
   String? city;
@@ -118,53 +122,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return value.clamp(1, 1000).round();
   }
 
-  void next() async {
+  Future<void> next() async {
     final a = AppState.instance.arabic;
     setState(() => error = null);
 
-    if (step == 0 && name.text.trim().isEmpty) {
-      setState(
-        () => error = a ? 'يرجى إدخال اسمك' : 'Please enter your name',
-      );
-      return;
-    }
-
-    if (step == 1 && city == null) {
-      setState(
-        () => error = a ? 'يرجى اختيار مدينتك' : 'Please select your city',
-      );
-      return;
-    }
-
     final normalizedAge = _normalizedAge();
-    if (step == 2 &&
-        (normalizedAge == null ||
-            normalizedAge < 1 ||
-            normalizedAge > 120 ||
-            sex == null)) {
-      setState(
-        () => error = a
-            ? 'أدخل عمراً صحيحاً بين 1 و120 واختر الجنس'
-            : 'Enter a valid age from 1 to 120 and select sex',
-      );
-      return;
-    }
-
     final parsedHeight = double.tryParse(height.text.trim());
-    if (step == 3 &&
-    (parsedHeight == null || parsedHeight < 50 || parsedHeight > 250)) {
-      setState(
-        () => error = a
-            ? 'أدخل طولاً صحيحاً بين 50 و250 سم'
-            : 'Enter a valid height from 50 to 250 cm',
-      );
+
+    String? problem;
+    if (name.text.trim().isEmpty) {
+      problem = a ? 'يرجى إدخال اسمك' : 'Please enter your name';
+    } else if (normalizedAge == null ||
+        normalizedAge < 1 ||
+        normalizedAge > 120) {
+      problem = a
+          ? 'أدخل عمراً صحيحاً بين 1 و120'
+          : 'Enter a valid age from 1 to 120';
+    } else if (parsedHeight == null ||
+        parsedHeight < 50 ||
+        parsedHeight > 250) {
+      problem = a
+          ? 'أدخل طولاً صحيحاً بين 50 و250 سم'
+          : 'Enter a valid height from 50 to 250 cm';
+    } else if (sex == null) {
+      problem = a ? 'يرجى اختيار الجنس' : 'Please select sex';
+    } else if (city == null) {
+      problem = a ? 'يرجى اختيار مدينتك' : 'Please select your city';
+    }
+    if (problem != null) {
+      setState(() => error = problem);
       return;
     }
 
-    if (step < 3) {
-      setState(() => step++);
-      return;
-    }
     setState(() => loading = true);
     try {
       await ProfileRepository().save(
@@ -174,10 +163,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           age: normalizedAge!,
           sex: sex!,
           heightCm: parsedHeight!,
-         personalBest: _estimatedPef(),   // ← add this lin
+          personalBest: _estimatedPef(),
         ),
       );
-      if (mounted) context.push('/onboarding/medications');
+      if (mounted) context.push('/onboarding/triggers');
     } on FormatException {
       if (mounted) {
         setState(
@@ -202,147 +191,91 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final a = AppState.instance.arabic;
-    final icons = const [
-      Icons.favorite,
-      Icons.location_on,
-      Icons.person,
-      Icons.straighten,
-    ];
-    final pages = [
-      (
-        a ? 'مرحباً بك في AsthmaCare' : 'Welcome to AsthmaCare',
-        a
-            ? 'لنقم بإعداد ملفك الشخصي لتخصيص خطة إدارة الربو الخاصة بك.'
-            : "Let's set up your profile to personalize your asthma management plan.",
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _field(
-              a ? 'بماذا نناديك؟' : 'What should we call you?',
-              a ? 'أدخل اسمك' : 'Enter your name',
-              name,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    SupabaseService.client?.auth.currentUser?.email ?? '',
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      (
-        a ? 'الموقع' : 'Location',
-        a
-            ? 'نحتاج إلى معرفة مدينتك في العراق لتقديم تنبيهات دقيقة عن الطقس والعواصف الترابية.'
-            : 'We need your city in Iraq to provide accurate weather and dust storm alerts.',
-        DropdownButtonFormField<String>(
-          initialValue: city,
-          decoration: InputDecoration(
-            labelText: a ? 'اختر مدينتك في العراق' : 'Select your city in Iraq',
-          ),
-          items: cities
-              .map(
-                (x) => DropdownMenuItem(
-                  value: x,
-                  child: Text(a ? localizedCities[x]! : x),
-                ),
-              )
-              .toList(),
-          onChanged: (v) => setState(() => city = v),
-        ),
-      ),
-      (
-        a ? 'معلومات عنك' : 'About You',
-        a
-            ? 'نحتاج إلى بعض التفاصيل الأساسية لحساب مؤشراتك الصحية.'
-            : 'We need some basic details to calculate your health metrics.',
-        Column(
-          children: [
-            _field(
-              a ? 'العمر' : 'Age',
-              a ? 'بالسنوات' : 'Years',
-              age,
-              number: true,
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<String>(
-              initialValue: sex,
-              decoration: InputDecoration(labelText: a ? 'الجنس' : 'sex'),
-              items: const ['Male', 'Female']
-                  .map(
-                    (x) => DropdownMenuItem(
-                      value: x,
-                      child: Text(a ? localizedsex[x]! : x),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => sex = v),
-            ),
-          ],
-        ),
-      ),
-      (
-        a ? 'القياسات' : 'Measurements',
-        a
-            ? 'طولك مهم لحساب قيمة ذروة تدفق الهواء المتوقعة.'
-            : 'Your height is important for calculating your predicted peak flow.',
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _field(
-              a ? 'الطول (سم)' : 'Height (cm)',
-              a ? 'مثال: 175' : 'e.g., 175',
-              height,
-              number: true,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              a
-                  ? 'يُستخدم لحساب ذروة تدفق الزفير المتوقعة (PEF).'
-                  : 'Used to calculate your predicted Peak Expiratory Flow (PEF).',
-            ),
-            const SizedBox(height: 12),
-            _pefPreviewCard(a),
-          ],
-        ),
-      ),
-    ];
-
-    final p = pages[step];
     return _OnboardingFrame(
-      progress: _onboardingProgress(step + 1),
-      icon: icons[step],
-      title: p.$1,
-      subtitle: p.$2,
-      showBack: step > 0,
-      back: () => setState(() => step--),
+      progress: _setupProgress(1),
+      icon: Icons.favorite,
+      title: a ? 'مرحباً بك في AsthmaCare' : 'Welcome to AsthmaCare',
+      subtitle: a
+          ? 'لنقم بإعداد ملفك الشخصي لتخصيص خطة إدارة الربو الخاصة بك.'
+          : "Let's set up your profile to personalize your asthma management plan.",
+      showBack: false,
+      back: () {},
       continueAction: next,
-      continueText: step == 3
-          ? (a ? 'إكمال الإعداد' : 'Complete Setup')
-          : (a ? 'متابعة' : 'Continue'),
+      continueText: a
+          ? 'التالي: حساب قياسي المتوقع'
+          : 'Next: Calculate my expected PEF',
       loading: loading,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          p.$3,
+          _field(
+            a ? 'بماذا نناديك؟' : 'What should we call you?',
+            a ? 'أدخل اسمك' : 'Enter your name',
+            name,
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  SupabaseService.client?.auth.currentUser?.email ?? '',
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _field(
+            a ? 'العمر' : 'Age',
+            a ? 'بالسنوات' : 'Years',
+            age,
+            number: true,
+          ),
+          const SizedBox(height: 14),
+          _field(
+            a ? 'الطول (سم)' : 'Height (cm)',
+            a ? 'مثال: 175' : 'e.g., 175',
+            height,
+            number: true,
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            initialValue: sex,
+            decoration: InputDecoration(labelText: a ? 'الجنس' : 'sex'),
+            items: const ['Male', 'Female']
+                .map(
+                  (x) => DropdownMenuItem(
+                    value: x,
+                    child: Text(a ? localizedsex[x]! : x),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) => setState(() => sex = v),
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            initialValue: city,
+            decoration: InputDecoration(
+              labelText: a ? 'اختر مدينتك في العراق' : 'Select your city in Iraq',
+            ),
+            items: cities
+                .map(
+                  (x) => DropdownMenuItem(
+                    value: x,
+                    child: Text(a ? localizedCities[x]! : x),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) => setState(() => city = v),
+          ),
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                error!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              child: Text(error!, style: const TextStyle(color: Colors.red)),
             ),
         ],
       ),
@@ -362,41 +295,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         decoration: InputDecoration(labelText: label, hintText: hint),
         onChanged: onChanged,
       );
-
-  Widget _pefPreviewCard(bool a) {
-    final estimated = _estimatedPef();
-    if (estimated == null) return const SizedBox.shrink();
-    return AppCard(
-      color: const Color(0xFFF0FDF4),
-      child: Row(
-        children: [
-          const Icon(Icons.speed, color: Colors.green),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                a ? 'ذروة التدفق المتوقعة' : 'Estimated Peak Flow',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green.shade800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$estimated L/min',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade800,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 bool isValidEmergencyPhone(String value) {
@@ -469,7 +367,7 @@ if (widget.fromEdit) {
   return;
 }
 if (OnboardingMedicationState.instance.selectedCodes.isEmpty) {
-  context.push('/onboarding/triggers');
+  context.go('/');
 } else {
   context.push('/onboarding/medications/info/0');
 }
@@ -734,7 +632,7 @@ class MedicationInfoScreen extends StatelessWidget {
     final selected = OnboardingMedicationState.instance.selectedMedications;
     if (selected.isEmpty || index < 0 || index >= selected.length) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => context.go('/onboarding/triggers'),
+        (_) => context.go('/'),
       );
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -911,7 +809,7 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
         widget.index < 0 ||
         widget.index >= selected.length) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => context.go('/onboarding/triggers'),
+        (_) => context.go('/'),
       );
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -939,7 +837,7 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
           : appText('Continue', 'استمرار'),
       continueAction: () => hasNext
           ? context.go('/onboarding/medications/info/${widget.index + 1}')
-          : context.push('/onboarding/triggers'),
+          : context.go('/'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1556,7 +1454,7 @@ class _TriggersScreenState extends State<TriggersScreen> {
       );
     }
 
-    if (mounted) context.push('/onboarding/emergency-contact');
+    if (mounted) context.push('/onboarding/pef-result');
   } catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1572,7 +1470,7 @@ class _TriggersScreenState extends State<TriggersScreen> {
   Widget build(BuildContext context) {
     final a = AppState.instance.arabic;
     return _OnboardingFrame(
-      progress: _onboardingProgress(6),
+      progress: _setupProgress(2),
       icon: Icons.warning_amber_rounded,
       title: appText('Asthma Triggers', 'مهيجات الربو'),
       subtitle: appText(
@@ -1583,7 +1481,7 @@ class _TriggersScreenState extends State<TriggersScreen> {
       continueAction: _continue,
       loading: saving,
       continueText: appText('Continue', 'متابعة'),
-      secondaryAction: () => context.push('/onboarding/emergency-contact'),
+      secondaryAction: () => context.push('/onboarding/pef-result'),
       secondaryText: appText('Skip', 'تخطي'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1677,6 +1575,111 @@ class _TriggersScreenState extends State<TriggersScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Shows the expected (predicted) PEF calculated from the profile that was
+/// just saved. Sits between Triggers and Medications in the onboarding flow.
+class PefResultScreen extends StatefulWidget {
+  const PefResultScreen({super.key});
+
+  @override
+  State<PefResultScreen> createState() => _PefResultScreenState();
+}
+
+class _PefResultScreenState extends State<PefResultScreen> {
+  int? pef;
+  bool loading = true;
+  bool finishing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _finish() async {
+    if (finishing) return;
+    setState(() => finishing = true);
+    try {
+      await AppState.instance.finishOnboarding();
+    } catch (_) {
+      // Onboarding is already flagged locally; continue to Home regardless.
+    }
+    if (mounted) context.go('/');
+  }
+
+  Future<void> _load() async {
+    try {
+      final profile = await ProfileRepository().getCurrent();
+      if (profile != null) {
+        pef = profile.personalBest ??
+            (profile.sex == 'Female'
+                    ? profile.heightCm * 3.72 + profile.age * 2.24 - 232
+                    : profile.heightCm * 5.48 - profile.age * 1.93 - 367)
+                .clamp(1, 1000)
+                .round();
+      }
+    } catch (_) {
+      // Falls back to the '--' placeholder below.
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _OnboardingFrame(
+      progress: _setupProgress(3),
+      icon: Icons.speed,
+      title: appText('Your Expected PEF', 'قياسك المتوقع (PEF)'),
+      subtitle: appText(
+        'Calculated from your height, age and sex.',
+        'محسوب بناءً على طولك وعمرك وجنسك.',
+      ),
+      back: () => context.pop(),
+      continueAction: _finish,
+      loading: finishing,
+      child: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppCard(
+                  color: const Color(0xFFF0FDF4),
+                  child: Column(
+                    children: [
+                      Text(
+                        pef?.toString() ?? '--',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        appText('L/min', 'لتر/دقيقة'),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppCard(
+                  child: Text(
+                    appText(
+                      'This is only a rough estimate based on height, age and sex. Your doctor should set your actual "personal best" by tracking your readings daily for 2-3 weeks while your condition is stable.',
+                      'هذا رقم تقديري تقريبي فقط بناءً على الطول والعمر والجنس. يجب أن يحدد طبيبك "أفضل قياس شخصي" فعلي عبر متابعة القياس يومياً لمدة 2-3 أسابيع أثناء استقرار حالتك.',
+                    ),
+                    style: const TextStyle(height: 1.5),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

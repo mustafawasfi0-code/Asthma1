@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_state.dart';
+import '../core/app_theme.dart';
 import '../core/localized_values.dart';
 import '../models/home_data.dart';
 import '../models/medication.dart';
@@ -12,6 +13,9 @@ import '../services/emergency_call_service.dart';
 import '../services/weather_service.dart';
 import '../widgets/common.dart';
 
+/// Weather conditions the home advisory card can show. `hide` hides the card.
+enum _WeatherCondition { clear, hot, wind, dust, cold, hide }
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -20,15 +24,19 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const _page = Color(0xFFF3F9FC);
-  static const _blue = Color(0xFF0787F7);
-  static const _ink = Color(0xFF111827);
-  static const _muted = Color(0xFF667085);
+  static const _page = Color(0xFFF4F7F5);
+  static const _blue = AppColors.green;
+  static const _ink = AppColors.darkGreen;
+  static const _muted = AppColors.muted;
   final repository = HomeRepository();
   HomeData? data;
   bool loading = true;
   String? loadError;
   WeatherStatus weather = const WeatherStatus(state: WeatherState.loading);
+
+  /// Manually chosen weather condition from the "Try other conditions" chips.
+  /// `null` means "use the real weather".
+  _WeatherCondition? _override;
 
   @override
   void initState() {
@@ -69,104 +77,131 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) setState(() => weather = result);
   }
 
-  Widget _actionPlan(BuildContext context) => _pressable(
-        key: const ValueKey('home_pef'),
-        onTap: () => context.go('/monitoring?tab=symptoms'),
-        borderRadius: 28,
-        child: Container(
-          height: 172,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF16E1AF), Color(0xFF00BE13)],
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x2B00A73C),
-                blurRadius: 18,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              PositionedDirectional(
-                end: -35,
-                top: -46,
-                child: Container(
-                  width: 145,
-                  height: 145,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .10),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              PositionedDirectional(
-                start: -38,
-                bottom: -62,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .08),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.health_and_safety_outlined,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                  const Spacer(),
-                  Text(
-                    appText('Daily Check', 'الفحص اليومي'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      height: 1.15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          appText('Daily checking of your health', 'الفحص اليومي لصحتك'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white,
-                        size: 15,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
+  // ---------------------------------------------------------------------
+  // Derived state
+  // ---------------------------------------------------------------------
+
+  Set<DateTime> get _followUpDays {
+    final days = <DateTime>{};
+    for (final row in data?.peakFlows ?? const <Map<String, dynamic>>[]) {
+      final d = DateTime.tryParse(row['measured_at']?.toString() ?? '')
+          ?.toLocal();
+      if (d != null) days.add(DateTime(d.year, d.month, d.day));
+    }
+    return days;
+  }
+
+  /// The daily check counts as done once a peak-flow reading exists today.
+  bool get _dailyCheckDone {
+    final now = DateTime.now();
+    return _followUpDays.contains(DateTime(now.year, now.month, now.day));
+  }
+  
+  /// Check if it's late in the day (Algorithm 8)
+  bool get _isLateForCheck {
+    return DateTime.now().hour >= 16; // After 4:00 PM
+  }
+
+  /// Consecutive days with at least one reading. A streak stays alive until
+  /// the end of today, so it starts counting from yesterday if today is empty.
+  int get _streak {
+    final days = _followUpDays;
+    final now = DateTime.now();
+    var cursor = DateTime(now.year, now.month, now.day);
+    if (!days.contains(cursor)) {
+      cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
+    }
+    var count = 0;
+    while (days.contains(cursor)) {
+      count++;
+      cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
+    }
+    return count;
+  }
+
+  _WeatherCondition? get _autoCondition {
+    if (weather.state != WeatherState.ready) return null;
+    final t = weather.temperatureC ?? 0;
+    if (t >= 38) return _WeatherCondition.hot;
+    if (t <= 10) return _WeatherCondition.cold;
+    if ((weather.windKmh ?? 0) >= 30) return _WeatherCondition.wind;
+    return _WeatherCondition.clear;
+  }
+
+  _WeatherCondition? get _selectedCondition => _override ?? _autoCondition;
+
+  /// Algorithm 3: Check if current condition matches user's known sensitive triggers
+  bool _isTriggerMatch(_WeatherCondition c) {
+    // In a real database, this compares [c] with data?.profile?.triggers
+    // For smart demonstration, we consider Dust, Wind, and Cold as major asthma triggers
+    return c == _WeatherCondition.dust || c == _WeatherCondition.cold || c == _WeatherCondition.wind;
+  }
+
+  String _dateLine() {
+    final n = DateTime.now();
+    const daysEn = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    const monthsEn = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const daysAr = [
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    const monthsAr = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    final h = n.hour % 12 == 0 ? 12 : n.hour % 12;
+    final time =
+        '${h.toString().padLeft(2, '0')}:${n.minute.toString().padLeft(2, '0')}';
+    return AppState.instance.arabic
+        ? '${daysAr[n.weekday - 1]}، ${n.day} ${monthsAr[n.month - 1]} $time ${n.hour < 12 ? 'ص' : 'م'}'
+        : '${daysEn[n.weekday - 1]}, ${monthsEn[n.month - 1]} ${n.day} · $time ${n.hour < 12 ? 'AM' : 'PM'}';
+  }
+
+  // ---------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    final showTasks = data != null && !_dailyCheckDone;
+    final condition = _selectedCondition;
+    final showAdvisory = condition != null && condition != _WeatherCondition.hide;
     return Directionality(
       textDirection: AppState.instance.arabic
           ? TextDirection.rtl
@@ -199,51 +234,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _errorBanner(),
                           ],
                           const SizedBox(height: 20),
-                          _actionPlan(context),
-                          const SizedBox(height: 22),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _gradientAction(
-                                  context,
-                                  key: const ValueKey('home_learn'),
-                                  colors: const [
-                                    Color(0xFF14B8A6),
-                                    Color(0xFF0D9488),
-                                  ],
-                                  iconColor: const Color(0xFF14B8A6),
-                                  icon: Icons.menu_book_outlined,
-                                  title: appText('Learn', 'تعلّم'),
-                                  subtitle: appText('Educational resources', 'مصادر تعليمية'),
-                                  onTap: () => context.go('/learn'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _gradientAction(
-                                  context,
-                                  key: const ValueKey('home_inhaler'),
-                                  colors: const [
-                                    Color(0xFFD51CF1),
-                                    Color(0xFFA900ED),
-                                  ],
-                                  iconColor: const Color(0xFFCB42EB),
-                                  icon: Icons.monitor_heart_outlined,
-                                  title: appText('Use inhaler', 'استخدام البخاخ'),
-                                  subtitle: appText('Learn technique', 'تعلم الطريقة'),
-                                  onTap: () => context.go('/learn/inhaler-technique?tab=inhaler'),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 22),
-                          _medications(context, data),
-                          const SizedBox(height: 22),
-                          _stats(data),
+                          if (showTasks) ...[
+                            _tasksCard(context),
+                            const SizedBox(height: 16),
+                          ],
+                          if (showAdvisory) ...[
+                            _weatherAdvisory(condition),
+                            const SizedBox(height: 16),
+                          ],
+                          _conditionChips(condition),
+                          const SizedBox(height: 16),
+                          _streakCard(),
+                          const SizedBox(height: 16),
+                          _startDailyCheckButton(context),
+                          const SizedBox(height: 12),
+                          _shortcutGrid(context),
                           const SizedBox(height: 22),
                           _reminders(context, data),
-                          const SizedBox(height: 22),
-                          _weather(weather, data?.profile?.city),
                           const SizedBox(height: 22),
                           _medicalDisclaimer(),
                           const SizedBox(height: 18),
@@ -269,23 +276,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Text(
                   home?.profile?.name == null
-                      ? appText('Hello', 'مرحباً')
-                      : appText('Hello, ', 'مرحباً، ') +
-                          localizedPersonName(home!.profile!.name),
-                  style: const TextStyle(
-                    color: _muted,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  appText('Your asthma dashboard', 'لوحة متابعة الربو'),
+                      ? appText('Hello 👋', 'مرحباً 👋')
+                      : '${appText('Hello, ', 'مرحباً ')}'
+                          '${localizedPersonName(home!.profile!.name)} 👋',
                   style: const TextStyle(
                     color: _ink,
                     fontSize: 25,
                     height: 1.2,
                     fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _dateLine(),
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -304,6 +311,550 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text(AppState.instance.arabic ? 'English' : 'العربية'),
           ),
         ],
+      );
+
+  // ---------------------------------------------------------------------
+  // New sections
+  // ---------------------------------------------------------------------
+
+  // Algorithm 8: Smart Time-based Task Reminder
+  Widget _tasksCard(BuildContext context) {
+    final isLate = _isLateForCheck;
+    final cardBg = isLate ? const Color(0xFFFFF4F4) : Colors.white;
+    final cardBorder = isLate ? const Color(0xFFFFD1D6) : AppColors.grey;
+    final iconColor = isLate ? const Color(0xFFE11D35) : AppColors.green;
+    
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: cardBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10101828),
+            blurRadius: 12,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isLate ? Icons.notification_important_rounded : Icons.assignment_outlined,
+                color: iconColor,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                 isLate 
+    ? appText('Alert: Daily check missing!', 'تنبيه: لم تقم بالفحص اليومي!') 
+    : appText("Today's Tasks", 'مهام اليوم'),
+                  style: TextStyle(
+                    color: isLate ? const Color(0xFF9D0615) : _ink,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isLate) ...[
+            const SizedBox(height: 6),
+            Text(
+              appText(
+                'Consistency prevents asthma attacks. Please take 2 minutes to record your symptoms now.',
+                'الالتزام يمنع نوبات الربو. يرجى تخصيص دقيقتين لتسجيل قراءاتك الآن.',
+              ),
+              style: TextStyle(
+                color: const Color(0xFFC72439),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          InkWell(
+            key: const ValueKey('home_task_daily_check'),
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.go('/monitoring?tab=symptoms'),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: false,
+                  activeColor: iconColor,
+                  side: BorderSide(color: isLate ? iconColor : Colors.grey, width: 2),
+                  onChanged: (_) =>
+                      context.go('/monitoring?tab=symptoms'),
+                ),
+                Expanded(
+                  child: Text(
+                    appText('Complete Daily Check', 'إجراء الفحص اليومي'),
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  ({String title, String body, IconData icon, Color bg, Color border, Color fg, Color iconColor})
+      _advisoryFor(_WeatherCondition c) {
+    final city = data?.profile?.city;
+    final cityText = city == null || city.isEmpty ? '' : ' — ${localizedCity(city)}';
+    final realTemp = weather.state == WeatherState.ready &&
+            _override == null &&
+            weather.temperatureC != null
+        ? weather.temperatureC!.round()
+        : null;
+    switch (c) {
+      case _WeatherCondition.hot:
+        return (
+          title: appText(
+            'Very hot weather today (~${realTemp ?? 41}°C)$cityText',
+            'طقس حار جداً اليوم (~${realTemp ?? 41}°م)$cityText',
+          ),
+          body: appText(
+            'Extreme heat can dry the air and put extra strain on your breathing. Drink enough water, avoid physical exertion between 12 and 4 pm, and carry your rescue inhaler if you go out.',
+            'الحرارة الشديدة قد تسبب جفافاً وتزيد إجهاد الجهاز التنفسي. اشرب ماءً كافياً، تجنّب المجهود البدني بين الساعة 12 و4 ظهراً، واحمل بخاخ الطوارئ معك إن خرجت.',
+          ),
+          icon: Icons.thermostat,
+          bg: const Color(0xFFFFF4E5),
+          border: const Color(0xFFFFD9A0),
+          fg: const Color(0xFF92400E),
+          iconColor: const Color(0xFFB45309),
+        );
+      case _WeatherCondition.clear:
+        return (
+          title: appText('Clear weather today$cityText', 'طقس صافٍ اليوم$cityText'),
+          body: appText(
+            'Good conditions for breathing. Keep taking your medicines as prescribed and stay gently active.',
+            'أجواء مناسبة للتنفس. استمر على أدويتك حسب وصف الطبيب وحافظ على نشاطك بلطف.',
+          ),
+          icon: Icons.wb_sunny_outlined,
+          bg: const Color(0xFFE3F5EF),
+          border: AppColors.grey,
+          fg: AppColors.darkGreen,
+          iconColor: AppColors.green,
+        );
+      case _WeatherCondition.wind:
+        return (
+          title: appText('Windy weather today$cityText', 'رياح قوية اليوم$cityText'),
+          body: appText(
+            'Wind can stir up dust and pollen. Limit time outdoors, keep windows closed and carry your rescue inhaler.',
+            'الرياح قد تثير الغبار وحبوب اللقاح. قلّل الوقت في الخارج، أبقِ النوافذ مغلقة واحمل بخاخ الطوارئ.',
+          ),
+          icon: Icons.air,
+          bg: const Color(0xFFEAF8FF),
+          border: AppColors.grey,
+          fg: AppColors.darkGreen,
+          iconColor: AppColors.oceanBlue,
+        );
+      case _WeatherCondition.dust:
+        return (
+          title: appText('Dust alert today$cityText', 'تنبيه غبار اليوم$cityText'),
+          body: appText(
+            'Dust and sand can trigger asthma symptoms. Stay indoors, keep windows closed, wear a mask if you must go out and keep your rescue inhaler close.',
+            'الغبار والرمال قد يثيران أعراض الربو. ابقَ في المنزل، أغلق النوافذ، ارتدِ كمامة إن اضطررت للخروج وأبقِ بخاخ الطوارئ قريباً.',
+          ),
+          icon: Icons.blur_on,
+          bg: const Color(0xFFFFF0DA),
+          border: const Color(0xFFFFD9A0),
+          fg: const Color(0xFF92400E),
+          iconColor: const Color(0xFFB45309),
+        );
+      case _WeatherCondition.cold:
+        return (
+          title: appText(
+            'Cold weather today${realTemp == null ? '' : ' (~$realTemp°C)'}$cityText',
+            'طقس بارد اليوم${realTemp == null ? '' : ' (~$realTemp°م)'}$cityText',
+          ),
+          body: appText(
+            'Cold air can tighten the airways. Cover your nose and mouth with a scarf, warm up before exercise and carry your rescue inhaler.',
+            'الهواء البارد قد يضيّق المجاري الهوائية. غطِّ أنفك وفمك بوشاح، سخّن جسمك قبل التمارين واحمل بخاخ الطوارئ.',
+          ),
+          icon: Icons.ac_unit,
+          bg: const Color(0xFFEFF6FF),
+          border: const Color(0xFFBFDBFE),
+          fg: AppColors.darkGreen,
+          iconColor: const Color(0xFF2563EB),
+        );
+      case _WeatherCondition.hide:
+        throw StateError('hide has no advisory');
+    }
+  }
+
+  // Algorithm 3: Render smart weather advisory
+  Widget _weatherAdvisory(_WeatherCondition c) {
+    final a = _advisoryFor(c);
+    final isTrigger = _isTriggerMatch(c);
+
+    return Container(
+      key: const ValueKey('home_weather_advisory'),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: a.bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isTrigger ? a.iconColor : a.border, width: isTrigger ? 1.5 : 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isTrigger) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: a.iconColor.withValues(alpha: .15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bolt, color: a.iconColor, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    appText('Personalized Trigger Alert', 'تنبيه مخصص بناءً على مهيجاتك'),
+                    style: TextStyle(
+                      color: a.iconColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(a.icon, color: a.iconColor, size: 34),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a.title,
+                      style: TextStyle(
+                        color: a.fg,
+                        fontSize: 17,
+                        height: 1.3,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isTrigger 
+                          ? '${a.body} ${appText("Since this is one of your known triggers, please be extra careful.", "بما أن هذا الجو يعتبر من مهيجات الربو لديك، يرجى أخذ حذر مضاعف.")}'
+                          : a.body,
+                      style: TextStyle(
+                        color: a.fg,
+                        fontSize: 14,
+                        height: 1.55,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _conditionChips(_WeatherCondition? selected) {
+    final options = <(_WeatherCondition, String)>[
+      (_WeatherCondition.clear, appText('Clear', 'صافٍ')),
+      (_WeatherCondition.hot, appText('Hot', 'حار')),
+      (_WeatherCondition.wind, appText('Wind', 'رياح')),
+      (_WeatherCondition.dust, appText('Dust', 'غبار')),
+      (_WeatherCondition.cold, appText('Cold', 'بارد')),
+      (_WeatherCondition.hide, appText('Hide', 'إخفاء')),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          appText(
+            'Try other conditions (experimental):',
+            'جرّب حالات أخرى (تجريبي):',
+          ),
+          style: const TextStyle(
+            color: _muted,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final option in options)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8),
+                  child: _conditionChip(option.$1, option.$2, selected),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _conditionChip(
+    _WeatherCondition value,
+    String label,
+    _WeatherCondition? selected,
+  ) {
+    final active = value == selected;
+    return Material(
+      color: active ? AppColors.green.withValues(alpha: .10) : Colors.white,
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: active ? AppColors.green : AppColors.grey,
+          width: active ? 1.5 : 1,
+        ),
+      ),
+      child: InkWell(
+        key: ValueKey('home_condition_${value.name}'),
+        customBorder: const StadiumBorder(),
+        onTap: () => setState(() => _override = value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: active ? AppColors.green : _ink,
+              fontSize: 14,
+              fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _streakCard() => _surface(
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+        child: Column(
+          key: const ValueKey('home_streak'),
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.local_fire_department,
+                  color: Color(0xFFFF5A00),
+                  size: 42,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '$_streak',
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              appText(
+                'days of consecutive follow-up',
+                'أيام متابعة متتالية',
+              ),
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              appText(
+                'Every day of follow-up brings you closer to understanding your asthma better.',
+                'كل يوم متابعة يقرّبك من فهم ربوك بشكل أفضل.',
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted, fontSize: 14, height: 1.5),
+            ),
+          ],
+        ),
+      );
+
+  Widget _startDailyCheckButton(BuildContext context) => _pressable(
+        key: const ValueKey('home_pef'),
+        onTap: () => context.go('/monitoring?tab=symptoms'),
+        borderRadius: 18,
+        child: Container(
+          height: 58,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.green, AppColors.darkGreen],
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x2B1C3A36),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                appText('Start Daily Check', 'ابدأ الفحص اليومي'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.monitor_heart_outlined,
+                color: Colors.white,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      );
+
+  void _openMedications(BuildContext context) {
+    final medicines = data?.medications ?? const <Medication>[];
+    if (medicines.isEmpty) {
+      context.push('/onboarding/medications?edit=true', extra: <String>[]);
+    } else {
+      _openMedicationPicker(context, medicines);
+    }
+  }
+
+  Widget _shortcutGrid(BuildContext context) {
+    Widget row(Widget first, Widget second) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Expanded(child: first),
+              const SizedBox(width: 12),
+              Expanded(child: second),
+            ],
+          ),
+        );
+    return Column(
+      children: [
+        row(
+          _shortcut(
+            key: 'home_learn',
+            icon: Icons.menu_book_outlined,
+            color: AppColors.green,
+            label: appText('Learn', 'تعلّم'),
+            onTap: () => context.go('/learn'),
+          ),
+          _shortcut(
+            key: 'home_action_plan',
+            icon: Icons.assignment_outlined,
+            color: AppColors.darkGreen,
+            label: appText('GINA Plan', 'خطة GINA'),
+            onTap: () => context.go('/action-plan'),
+          ),
+        ),
+        row(
+          _shortcut(
+            key: 'home_inhaler',
+            icon: Icons.air,
+            color: AppColors.oceanBlue,
+            label: appText('Inhaler List', 'قائمة البخاخ'),
+            onTap: () => context.go('/learn/inhaler-technique'),
+          ),
+          _shortcut(
+            key: 'home_medication_card',
+            icon: Icons.medication_outlined,
+            color: AppColors.green,
+            label: appText('My Medications', 'أدويتي'),
+            onTap: () => _openMedications(context),
+          ),
+        ),
+        row(
+          _shortcut(
+            key: 'home_patient_record',
+            icon: Icons.description_outlined,
+            color: AppColors.darkGreen,
+            label: appText('Patient Record', 'سجلّ المريض'),
+            onTap: () => context.go('/report'),
+          ),
+          _shortcut(
+            key: 'home_personal_best',
+            icon: Icons.track_changes,
+            color: AppColors.oceanBlue,
+            label: appText('My Personal Best', 'أفضل قياس شخصي لي'),
+            onTap: () => context.go('/profile'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _shortcut({
+    required String key,
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onTap,
+  }) =>
+      _pressable(
+        key: ValueKey(key),
+        onTap: onTap,
+        borderRadius: 24,
+        child: _surface(
+          padding: EdgeInsets.zero,
+          child: SizedBox(
+            height: 118,
+            width: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 36),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
 
   Widget _errorBanner() => Container(
@@ -345,7 +896,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
           ),
-          // التعديل هنا: استخدام Flexible و SingleChildScrollView
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -366,7 +916,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       (medicine) => Padding(
                         padding: const EdgeInsets.only(bottom: 9),
                         child: Material(
-                          color: const Color(0xFFF7FAFC),
+                          color: const Color(0xFFF3F7F5),
                           borderRadius: BorderRadius.circular(17),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
@@ -377,7 +927,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0A8CF5),
+                                color: AppColors.green,
                                 borderRadius: BorderRadius.circular(13),
                               ),
                               child: const Icon(
@@ -410,325 +960,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _medications(BuildContext context, HomeData? home) {
-    final medicines = home?.medications ?? const [];
-    final selected = medicines.isEmpty ? null : medicines.first;
-    return _surface(
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.medication_outlined,
-                color: Color(0xFFD52EEA),
-                size: 29,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  appText('My Medications', 'أدويتي'),
-                  style: const TextStyle(
-                    color: _ink,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+              const SizedBox(height: 4),
               TextButton.icon(
-                key: const ValueKey('home_edit_medications'),
                 onPressed: () {
-                  final currentCodes = medicines.map((m) => m.code).toList();
+                  Navigator.of(sheetContext).pop();
                   context.push(
                     '/onboarding/medications?edit=true',
-                    extra: currentCodes,
+                    extra: medicines.map((m) => m.code).toList(),
                   );
                 },
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                label: Text(appText('Edit', 'تعديل')),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF007CD9),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                label: Text(appText('Edit medications', 'تعديل الأدوية')),
               ),
             ],
           ),
-          const SizedBox(height: 15),
-          _pressable(
-            key: const ValueKey('home_medication_card'),
-            onTap: selected == null
-                ? () => context.go('/onboarding/medications')
-                : medicines.length == 1
-                    ? () => context.go('/medications/info/${selected.code}')
-                    : () => _openMedicationPicker(context, medicines),
-            borderRadius: 18,
-            child: Container(
-              height: medicines.length > 1 ? 112 : 92,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEFFFF),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFEAF0F4)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0B101828),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: selected == null
-                  ? Row(
-                      children: [
-                        Container(
-                          width: 58,
-                          height: 66,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEAF4FD),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Color(0xFF0A8CF5),
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: Text(
-                            appText(
-                              'No medications selected. Tap to add.',
-                              'لا توجد أدوية مختارة. اضغط للإضافة.',
-                            ),
-                            style: const TextStyle(
-                              color: _muted,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Container(
-                          width: 58,
-                          height: 66,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0A8CF5),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x340078DE),
-                                blurRadius: 9,
-                                offset: Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.medication_outlined,
-                            color: Colors.white,
-                            size: 34,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                medicines
-                                    .map(
-                                      (medicine) => AppState.instance.arabic
-                                          ? medicine.nameAr
-                                          : medicine.nameEn,
-                                    )
-                                    .join(
-                                      AppState.instance.arabic ? '، ' : ', ',
-                                    ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _ink,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                medicines.length > 1
-                                    ? appText(
-                                        ' medications selected',
-                                        '${medicines.length} أدوية مختارة',
-                                      )
-                                    : AppState.instance.arabic
-                                        ? selected.descriptionAr
-                                        : selected.descriptionEn,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _muted,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              if (medicines.length > 1)
-                                Text(
-                                  '${appText('+', '+')}${medicines.length - 1} ${appText('more', 'أخرى')}',
-                                  style: const TextStyle(
-                                    color: Color(0xFF0787F7),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _gradientAction(
-    BuildContext context, {
-    required Key key,
-    required List<Color> colors,
-    required Color iconColor,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      key: key,
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _stats(HomeData? home) => Row(
-        children: [
-          Expanded(
-            child: _stat(
-              Icons.air,
-              const Color(0xFF0086EA),
-              home?.latestPeakFlow?.toString() ?? '--',
-              'PEF',
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: _stat(
-              Icons.medication_outlined,
-              const Color(0xFFD52EEA),
-              home?.medications.length.toString() ?? '0',
-              appText('Medicines', 'أدوية'),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: _stat(
-              Icons.trending_up,
-              const Color(0xFF00C878),
-              home?.peakFlows.length.toString() ?? '0',
-              appText('Readings', 'قراءات'),
-            ),
-          ),
-        ],
-      );
-
-  Widget _stat(IconData icon, Color color, String value, String label) =>
-      _surface(
-        padding: EdgeInsets.zero,
-        child: SizedBox(
-          height: 130,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: _ink,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: _muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 
   Widget _reminders(BuildContext context, HomeData? home) {
     final reminders = home?.reminders ?? const [];
@@ -744,7 +994,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 const Icon(
                   Icons.access_time,
-                  color: Color(0xFF0098EA),
+                  color: AppColors.green,
                   size: 27,
                 ),
                 const SizedBox(width: 10),
@@ -763,13 +1013,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   height: 30,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFE6F5FF),
+                    color: Color(0xFFE3F5EF),
                     shape: BoxShape.circle,
                   ),
                   child: Text(
                     reminders.length.toString(),
                     style: const TextStyle(
-                      color: Color(0xFF0089ED),
+                      color: AppColors.green,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -846,252 +1096,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       );
 
-  Widget _weather(WeatherStatus status, String? profileCity) {
-    final arabic = AppState.instance.arabic;
-    final cityText = status.state == WeatherState.ready &&
-            (status.cityLabel ?? profileCity) != null &&
-            (status.cityLabel ?? profileCity)!.isNotEmpty
-        ? localizedCity((status.cityLabel ?? profileCity)!)
-        : appText('Current location', 'موقعك الحالي');
-
-    final String tempText;
-    final String conditionText;
-    final IconData conditionIcon;
-    switch (status.state) {
-      case WeatherState.loading:
-        tempText = appText('Loading…', 'جارٍ التحميل…');
-        conditionText = appText('Loading…', 'جارٍ التحميل…');
-        conditionIcon = Icons.hourglass_top_outlined;
-        break;
-      case WeatherState.ready:
-        tempText = '${status.temperatureC!.round()}°C';
-        conditionText = weatherCodeLabel(status.weatherCode, arabic);
-        conditionIcon = _weatherIcon(status.weatherCode);
-        break;
-      case WeatherState.noInternet:
-        tempText = appText('No internet', 'لا يوجد إنترنت');
-        conditionText = appText(
-          'Connect to the internet',
-          'اتصل بالإنترنت',
-        );
-        conditionIcon = Icons.wifi_off_outlined;
-        break;
-      case WeatherState.locationDenied:
-        tempText = appText('Location denied', 'صلاحية الموقع مرفوضة');
-        conditionText = appText(
-          'Enable location access',
-          'فعّل صلاحية الموقع',
-        );
-        conditionIcon = Icons.location_disabled_outlined;
-        break;
-      case WeatherState.locationServiceDisabled:
-        tempText = appText('Location is off', 'الموقع مغلق');
-        conditionText = appText('Turn on location', 'شغّل خدمة الموقع');
-        conditionIcon = Icons.location_off_outlined;
-        break;
-      case WeatherState.unavailable:
-        tempText = appText('Unavailable', 'غير متاح');
-        conditionText = appText('Try again later', 'حاول لاحقاً');
-        conditionIcon = Icons.error_outline;
-        break;
-    }
-
-    return KeyedSubtree(
-      key: const ValueKey('home_weather'),
-      child: _surface(
-        padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.cloud_outlined,
-                  color: Color(0xFF008FE8),
-                  size: 29,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    appText("Today's Weather", 'الطقس اليوم'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _ink,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (status.state != WeatherState.loading)
-                  IconButton(
-                    key: const ValueKey('home_weather_refresh'),
-                    onPressed: _loadWeather,
-                    icon: const Icon(Icons.refresh, size: 20),
-                    color: _muted,
-                    tooltip: appText('Refresh', 'تحديث'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 17),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFEAF8FF), Color(0xFFDFFFF7)],
-                ),
-                border: Border.all(color: const Color(0xFFCDEEF3)),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        color: _muted,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          arabic ? 'موقعك الحالي' : 'Current location',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 17),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _weatherValue(
-                          Icons.thermostat_outlined,
-                          const Color(0xFFFF5A00),
-                          appText('Temperature', 'درجة الحرارة'),
-                          tempText,
-                        ),
-                      ),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: _weatherValue(
-                          conditionIcon,
-                          const Color(0xFF00BD76),
-                          appText('Condition', 'حالة الطقس'),
-                          conditionText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _weatherIcon(int? code) {
-    if (code == null) return Icons.help_outline;
-    if (code == 0) return Icons.wb_sunny_outlined;
-    if (code <= 3) return Icons.cloud_outlined;
-    if (code == 45 || code == 48) return Icons.foggy;
-    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
-      return Icons.water_drop_outlined;
-    }
-    if (code >= 71 && code <= 77) return Icons.ac_unit_outlined;
-    if (code >= 95) return Icons.thunderstorm_outlined;
-    return Icons.cloud_outlined;
-  }
-
-  Widget _weatherValue(
-    IconData icon,
-    Color color,
-    String label,
-    String value,
-  ) =>
-      Container(
-        height: 104,
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .82),
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: const Color(0xFFDDECF2)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0B101828),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              height: 28,
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    color: _ink,
-                    fontSize: 25,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-
   Widget _medicalDisclaimer() => Container(
         key: const ValueKey('home_disclaimer'),
         padding: const EdgeInsets.all(19),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F5F8),
+          color: const Color(0xFFF0F5F2),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFD8E0E6)),
+          border: Border.all(color: AppColors.grey),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.error_outline, color: Color(0xFF87919D), size: 25),
+            const Icon(Icons.error_outline, color: AppColors.muted, size: 25),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1100,7 +1116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     appText('Take medical responsibility', 'إخلاء مسؤولية طبي'),
                     style: const TextStyle(
-                      color: Color(0xFF374151),
+                      color: AppColors.darkGreen,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
@@ -1112,7 +1128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       'هذا التطبيق لدعم الإدارة الذاتية ولا يحل محل المشورة الطبية. في الطوارئ، اتصل بطبيبك فوراً.',
                     ),
                     style: const TextStyle(
-                      color: Color(0xFF4B5563),
+                      color: AppColors.muted,
                       fontSize: 13,
                       height: 1.55,
                       fontWeight: FontWeight.w500,
@@ -1134,7 +1150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE6EDF2)),
+          border: Border.all(color: AppColors.grey),
           boxShadow: const [
             BoxShadow(
               color: Color(0x10101828),

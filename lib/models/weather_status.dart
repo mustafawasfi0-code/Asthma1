@@ -13,12 +13,14 @@ class WeatherStatus {
     this.temperatureC,
     this.weatherCode,
     this.cityLabel,
+    this.windKmh,
   });
 
   final WeatherState state;
   final double? temperatureC;
   final int? weatherCode;
   final String? cityLabel;
+  final double? windKmh;
 }
 
 /// Maps Open-Meteo WMO weather codes to a short label.
