@@ -12,6 +12,7 @@ android {
      // ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true // <-- تمت الإضافة هنا
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -48,3 +49,7 @@ flutter {
     source = "../.."
 }
 
+// <-- تمت الإضافة هنا في نهاية الملف
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+}
