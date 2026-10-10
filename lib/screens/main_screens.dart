@@ -10,6 +10,7 @@ import '../models/medication.dart';
 import '../models/weather_status.dart';
 import '../repositories/home_repository.dart';
 import '../services/emergency_call_service.dart';
+import '../services/notification_service.dart';
 import '../services/weather_service.dart';
 import '../widgets/common.dart';
 
@@ -41,6 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationService.requestPermission();
     _load();
   }
 
@@ -773,22 +775,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: () => context.go('/learn'),
           ),
           _shortcut(
-            key: 'home_action_plan',
-            icon: Icons.assignment_outlined,
-            color: AppColors.darkGreen,
-            label: appText('GINA Plan', 'خطة GINA'),
-            onTap: () => context.go('/action-plan'),
-          ),
-        ),
-        row(
-          _shortcut(
-            key: 'home_inhaler',
-            icon: Icons.air,
-            color: AppColors.oceanBlue,
-            label: appText('Inhaler List', 'قائمة البخاخ'),
-            onTap: () => context.go('/learn/inhaler-technique'),
-          ),
-          _shortcut(
             key: 'home_medication_card',
             icon: Icons.medication_outlined,
             color: AppColors.green,
@@ -804,13 +790,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: appText('Patient Record', 'سجلّ المريض'),
             onTap: () => context.go('/report'),
           ),
-          _shortcut(
-            key: 'home_personal_best',
-            icon: Icons.track_changes,
-            color: AppColors.oceanBlue,
-            label: appText('My Personal Best', 'أفضل قياس شخصي لي'),
-            onTap: () => context.go('/profile'),
-          ),
+          const SizedBox.shrink(),
         ),
       ],
     );

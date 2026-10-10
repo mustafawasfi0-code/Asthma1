@@ -3,6 +3,7 @@ import '../core/app_state.dart';
 import '../models/medication.dart';
 import '../repositories/home_repository.dart';
 import '../repositories/reminder_repository.dart';
+import '../services/notification_service.dart';
 import '../widgets/common.dart';
 
 class MedicationDetailsScreen extends StatefulWidget {
@@ -171,6 +172,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
     }
     try {
       final values = await repository.loadAll();
+      try {
+        await NotificationService.syncReminders(values);
+      } catch (_) {}
       if (mounted) setState(() => reminders = values);
     } catch (_) {
       if (mounted) {

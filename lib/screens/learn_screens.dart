@@ -19,7 +19,7 @@ class LearnScreen extends StatelessWidget {
       children: [
         _guide(
           c,
-          appText('Inhaler Technique Guide', 'دليل استخدام البخاخ'),
+          appText('Inhaler List & Technique Guide', 'قائمة البخاخ ودليل الاستخدام'),
           appText(
             'Step-by-step instructions for your device',
             'تعليمات خطوة بخطوة لاستخدام جهازك',
@@ -40,6 +40,27 @@ class LearnScreen extends StatelessWidget {
           '/learn/pef-technique',
         ),
         SectionTitle(appText('Learn About Asthma', 'تعرّف على الربو')),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appText('What is Asthma?', 'ما هو الربو؟'),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              SizedBox(height: 8),
+              Text(
+                appText(
+                  'Asthma is a long-term condition in which the airways become inflamed and narrow, causing cough, wheezing, chest tightness and shortness of breath. It cannot be cured, but it can be controlled well with the right treatment.\n\n'
+                  'Taking your preventer medicine every day as prescribed is the most important part of control. It calms the inflammation in your airways even when you feel well, reduces the number of attacks, and lowers your need for the rescue inhaler. Stopping or skipping doses can bring symptoms back.',
+                  'الربو حالة مزمنة تلتهب فيها مجاري الهواء وتضيق، مما يسبب السعال والصفير وضيق الصدر وضيق النفس. لا يمكن الشفاء منه نهائياً لكن يمكن السيطرة عليه جيداً بالعلاج المناسب.\n\n'
+                  'الالتزام بأخذ الدواء الوقائي يومياً حسب وصف الطبيب هو أهم جزء في السيطرة على المرض، فهو يهدئ التهاب مجاري الهواء حتى عندما تشعر أنك بخير، ويقلل نوبات الربو والحاجة إلى بخاخ الإنقاذ. إيقاف الدواء أو تفويت الجرعات قد يعيد الأعراض.',
+                ),
+                style: TextStyle(height: 1.5),
+              ),
+            ],
+          ),
+        ),
         AppCard(
           onTap: () => _showArticle(
             c,

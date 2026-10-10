@@ -6,6 +6,7 @@ import 'core/app_state.dart';
 import 'core/app_theme.dart';
 import 'routes/app_router.dart';
 import 'services/supabase_service.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +15,7 @@ Future<void> main() async {
   await SupabaseService.initialize();
   
   await AppState.instance.load();
+  await NotificationService.init();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

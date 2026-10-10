@@ -68,10 +68,13 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   };
 
   static const adherenceOptions = {
-    'good': 'جيد',
-    'fair': 'متوسط',
-    'poor': 'ضعيف',
-    'none': 'معدوم',
+    'good': ('All days, all doses', 'كل الايام جميع الجرع'),
+    'fair': ('Most doses', 'اغلب الجرع'),
+    'poor': ('Some doses', 'بعض الجرع'),
+    'none': (
+      "I haven't used my medication recently",
+      'لم استخدم ادويتي بالفتره الاخيره',
+    ),
   };
 
   static const techniqueStepsEn = [
@@ -620,7 +623,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                   final active = adherenceLevel == e.key;
                   return ChoiceChip(
                     selected: active,
-                    label: Text(AppState.instance.arabic ? e.value : e.key),
+                    label: Text(AppState.instance.arabic ? e.value.$2 : e.value.$1),
                     onSelected: (_) => setState(() => adherenceLevel = e.key),
                     selectedColor: const Color(0xFFDCEEFF),
                     backgroundColor: Colors.white,
@@ -683,7 +686,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                appText('Did you follow these critical steps?', 'هل قمت بهذه الخطوات الأساسية عند استخدام البخاخ؟'),
+                appText('Did you follow these steps?', 'هل قمت بهذه الخطوات عند استخدام البخاخ؟'),
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
@@ -765,7 +768,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                appText('Select triggers', 'اختر مهيجات الربو'),
+                appText('Have you been exposed to any of these triggers?', 'هل تعرضت لاحدى هذه المهيجات؟'),
                 style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
