@@ -23,6 +23,7 @@ class PageFrame extends StatelessWidget {
     return Directionality(
       textDirection: a ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: Colors.white,
           leading: const AppBackButton(),
@@ -32,8 +33,9 @@ class PageFrame extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   fontSize: 20,
+                  color: AppColors.black,
                 ),
               ),
               if (subtitle.isNotEmpty)
@@ -44,9 +46,17 @@ class PageFrame extends StatelessWidget {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: AppState.instance.toggleLanguage,
-              child: Text(a ? 'English' : 'العربية'),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8),
+              child: TextButton(
+                onPressed: AppState.instance.toggleLanguage,
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.softGreen,
+                  foregroundColor: AppColors.green,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                ),
+                child: Text(a ? 'English' : 'العربية'),
+              ),
             ),
           ],
         ),
@@ -83,7 +93,7 @@ class AppBackButton extends StatelessWidget {
         context.go(fallback);
       }
     },
-    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
   );
 }
 
@@ -117,20 +127,21 @@ class AppNav extends StatelessWidget {
       (Icons.person_outline, Icons.person, appText('Profile', 'الملف')),
     ];
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.darkGreen,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withValues(alpha: .28),
-            blurRadius: 14,
-            offset: const Offset(0, -3),
+            color: Color(0x1A1C3A36),
+            blurRadius: 24,
+            offset: Offset(0, -6),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 72,
+          height: 76,
           child: Row(
             children: List.generate(items.length, (index) {
               final item = items[index];
@@ -138,29 +149,36 @@ class AppNav extends StatelessWidget {
               return Expanded(
                 child: InkWell(
                   onTap: () => context.go(routes[index]),
-                  splashColor: Colors.white.withValues(alpha: .08),
-                  highlightColor: Colors.white.withValues(alpha: .04),
+                  borderRadius: BorderRadius.circular(20),
+                  splashColor: AppColors.green.withValues(alpha: .08),
+                  highlightColor: AppColors.green.withValues(alpha: .04),
                   child: Padding(
                     padding: const EdgeInsets.only(top: 9, bottom: 6),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 3,
+                            horizontal: 18,
+                            vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: active
-                                ? AppColors.green
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                            gradient: active ? AppGradients.primary : null,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: active
+                                ? const [
+                                    BoxShadow(
+                                      color: Color(0x33007359),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Icon(
                             active ? item.$2 : item.$1,
-                            color: active
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: .6),
+                            color: active ? Colors.white : AppColors.muted,
                             size: 22,
                           ),
                         ),
@@ -170,9 +188,7 @@ class AppNav extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: active
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: .6),
+                            color: active ? AppColors.green : AppColors.muted,
                             fontSize: 11,
                             height: 1,
                             fontWeight: active
@@ -203,6 +219,7 @@ class AppNav extends StatelessWidget {
       : 0;
 }
 
+/// White floating card: rounded corners with a soft, light shadow.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
@@ -214,15 +231,23 @@ class AppCard extends StatelessWidget {
   final Color color;
   final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) => Card(
-    color: color,
-    elevation: 1,
-    shadowColor: Colors.black12,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Padding(padding: const EdgeInsets.all(18), child: child),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(5),
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(padding: const EdgeInsets.all(18), child: child),
+        ),
+      ),
     ),
   );
 }
@@ -232,9 +257,63 @@ class SectionTitle extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12, top: 8),
+    padding: const EdgeInsets.only(bottom: 12, top: 10),
     child: Text(text, style: Theme.of(context).textTheme.titleLarge),
   );
+}
+
+/// Green -> Bright Green gradient button. Fills the space its parent gives it
+/// (wrap it in a SizedBox to control the size).
+class GradientButton extends StatelessWidget {
+  const GradientButton({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    this.radius = 16,
+  });
+  final VoidCallback? onPressed;
+  final Widget child;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: enabled ? AppGradients.primary : null,
+        color: enabled ? null : AppColors.grey,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: enabled ? AppShadows.button : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(radius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Center(
+            child: DefaultTextStyle.merge(
+              style: TextStyle(
+                color: enabled ? Colors.white : AppColors.muted,
+                fontWeight: FontWeight.w800,
+                shadows: enabled
+                    ? const [
+                        Shadow(color: Color(0x66004D3B), blurRadius: 4),
+                      ]
+                    : null,
+              ),
+              child: IconTheme.merge(
+                data: IconThemeData(
+                  color: enabled ? Colors.white : AppColors.muted,
+                ),
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class PrimaryButton extends StatelessWidget {
@@ -250,27 +329,26 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     width: double.infinity,
-    height: 52,
-    child: FilledButton(
+    height: 54,
+    child: GradientButton(
       onPressed: onPressed,
-      style: FilledButton.styleFrom(
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Flexible(
-            child: Text(
-              text,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Icon(icon, size: 20),
-        ],
+            const SizedBox(width: 8),
+            Icon(icon, size: 20),
+          ],
+        ),
       ),
     ),
   );

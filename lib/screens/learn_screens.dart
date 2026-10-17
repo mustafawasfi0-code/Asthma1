@@ -108,7 +108,7 @@ class LearnScreen extends StatelessWidget {
         ),
         AppCard(
           onTap: () => c.go('/community'),
-          color: Color(0xFFFDF2F8),
+          color: AppColors.softOcean,
           child: ListTile(
             leading: Icon(Icons.groups, color: AppColors.pink),
             title: Text(appText('Asthma Community', 'مجتمع الربو')),
@@ -157,13 +157,20 @@ class LearnScreen extends StatelessWidget {
     Color color,
     String r,
   ) => Padding(
-    padding: EdgeInsets.only(bottom: 14),
+    padding: EdgeInsets.only(bottom: 6),
     child: AppCard(
-      color: color,
       onTap: () => c.go(r),
       child: Row(
         children: [
-          Icon(i, color: Colors.white, size: 36),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: AppGradients.primary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(i, color: Colors.white, size: 30),
+          ),
           SizedBox(width: 15),
           Expanded(
             child: Column(
@@ -172,16 +179,17 @@ class LearnScreen extends StatelessWidget {
                 Text(
                   t,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    color: AppColors.black,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
                   ),
                 ),
-                Text(s, style: TextStyle(color: Colors.white70)),
+                SizedBox(height: 2),
+                Text(s, style: TextStyle(color: AppColors.muted)),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward, color: Colors.white),
+          Icon(Icons.arrow_forward, color: AppColors.green),
         ],
       ),
     ),
@@ -386,7 +394,7 @@ class _TechniqueScreenState extends State<TechniqueScreen> {
         children: [
           if (pef)
             AppCard(
-              color: Color(0xFFEFF6FF),
+              color: Color(0xFFE6F4F0),
               child: Text(
                 appText(
                   'A Peak Flow Meter measures how fast air comes out of your lungs when you exhale forcefully. It can help you spot asthma symptoms before you feel them.',

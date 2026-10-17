@@ -25,7 +25,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const _page = Color(0xFFF4F7F5);
+  static const _page = AppColors.background;
   static const _blue = AppColors.green;
   static const _ink = AppColors.darkGreen;
   static const _muted = AppColors.muted;
@@ -270,7 +270,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _homeHeader(BuildContext context, HomeData? home) => Row(
+  Widget _homeHeader(BuildContext context, HomeData? home) => Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 14, 18),
+      decoration: BoxDecoration(
+        gradient: AppGradients.mint,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
         children: [
           Expanded(
             child: Column(
@@ -313,7 +319,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text(AppState.instance.arabic ? 'English' : 'العربية'),
           ),
         ],
-      );
+      ),
+    );
 
   // ---------------------------------------------------------------------
   // New sections
@@ -487,8 +494,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'الهواء البارد قد يضيّق المجاري الهوائية. غطِّ أنفك وفمك بوشاح، سخّن جسمك قبل التمارين واحمل بخاخ الطوارئ.',
           ),
           icon: Icons.ac_unit,
-          bg: const Color(0xFFEFF6FF),
-          border: const Color(0xFFBFDBFE),
+          bg: const Color(0xFFE6F4F0),
+          border: const Color(0xFFBFE9E6),
           fg: AppColors.darkGreen,
           iconColor: const Color(0xFF2563EB),
         );
@@ -700,48 +707,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
 
-  Widget _startDailyCheckButton(BuildContext context) => _pressable(
-        key: const ValueKey('home_pef'),
+  Widget _startDailyCheckButton(BuildContext context) => _shortcut(
+        key: 'home_pef',
+        icon: Icons.monitor_heart_outlined,
+        color: AppColors.green,
+        label: appText('Start Daily Check', 'ابدأ الفحص اليومي'),
         onTap: () => context.go('/monitoring?tab=symptoms'),
-        borderRadius: 18,
-        child: Container(
-          height: 58,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.green, AppColors.darkGreen],
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x2B1C3A36),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                appText('Start Daily Check', 'ابدأ الفحص اليومي'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Icon(
-                Icons.monitor_heart_outlined,
-                color: Colors.white,
-                size: 24,
-              ),
-            ],
-          ),
-        ),
       );
 
   void _openMedications(BuildContext context) {
@@ -815,7 +786,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 36),
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(icon, color: color, size: 29),
+                ),
                 const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -1129,15 +1108,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: padding,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.grey),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x10101828),
-              blurRadius: 12,
-              offset: Offset(0, 5),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: AppShadows.soft,
         ),
         child: child,
       );

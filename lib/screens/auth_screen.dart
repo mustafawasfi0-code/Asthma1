@@ -229,7 +229,7 @@ return Directionality(
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F6FF),
+                    color: const Color(0xFFE6F4F0),
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: const Icon(
@@ -315,13 +315,9 @@ return Directionality(
                 SizedBox(
                   width: double.infinity,
                   height: 54,
-                  child: FilledButton(
+                  child: GradientButton(
                     key: const ValueKey('auth_submit_button'),
                     onPressed: _loading ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.blue,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
                     child: _loading
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
                         : Text(

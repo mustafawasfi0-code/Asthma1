@@ -47,7 +47,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
         ? TextDirection.rtl
         : TextDirection.ltr,
     child: Scaffold(
-      backgroundColor: const Color(0xFFF3F8FC),
+      backgroundColor: const Color(0xFFF5F8F7),
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: const AppBackButton(),
@@ -79,7 +79,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
                   const SizedBox(height: 14),
                   _section(
                     icon: Icons.air,
-                    color: const Color(0xFF087CF0),
+                    color: const Color(0xFF007359),
                     title: appText('Peak flow readings', 'قراءات ذروة التدفق'),
                     empty: data.peakFlows.isEmpty,
                     children: data.peakFlows.map((row) {
@@ -168,7 +168,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
       children: [
         _heading(
           Icons.person,
-          const Color(0xFF087CF0),
+          const Color(0xFF007359),
           appText('Patient details', 'تفاصيل المريض'),
         ),
         const Divider(height: 24),
@@ -212,7 +212,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
 
   Widget _medications(List<Map<String, dynamic>> rows) => _section(
     icon: Icons.medication_outlined,
-    color: const Color(0xFFD82BEF),
+    color: const Color(0xFF007359),
     title: appText('Current medications', 'الأدوية الحالية'),
     empty: rows.isEmpty,
     children: rows
@@ -284,7 +284,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xFFE4EAF0)),
+      border: Border.all(color: const Color(0xFFE3E0E3)),
       boxShadow: const [
         BoxShadow(
           color: Color(0x10101828),
@@ -337,7 +337,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.circle, size: 8, color: Color(0xFF087CF0)),
+        const Icon(Icons.circle, size: 8, color: Color(0xFF007359)),
         const SizedBox(width: 9),
         Expanded(
           child: Column(

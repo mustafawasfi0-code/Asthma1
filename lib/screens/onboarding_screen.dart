@@ -221,7 +221,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Text(
                   SupabaseService.client?.auth.currentUser?.email ?? '',
                   style: const TextStyle(
-                    color: Color(0xFF6B7280),
+                    color: Color(0xFF5B6D69),
                     fontSize: 13,
                   ),
                 ),
@@ -405,7 +405,7 @@ if (OnboardingMedicationState.instance.selectedCodes.isEmpty) {
                       vertical: 9,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F6FF),
+                      color: const Color(0xFFE6F4F0),
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Row(
@@ -417,7 +417,7 @@ if (OnboardingMedicationState.instance.selectedCodes.isEmpty) {
                               'تم اختيار ${OnboardingMedicationState.instance.selectedCodes.length} من ${OnboardingMedicationState.instance.medications.length}',
                             ),
                             style: const TextStyle(
-                              color: Color(0xFF4F6599),
+                              color: Color(0xFF1C3A36),
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -493,7 +493,7 @@ if (OnboardingMedicationState.instance.selectedCodes.isEmpty) {
                     a
                         ? 'يمكنك المتابعة بدون اختيار دواء.'
                         : 'You can continue without choosing a medication.',
-                    style: const TextStyle(color: Color(0xFF6B7280)),
+                    style: const TextStyle(color: Color(0xFF5B6D69)),
                   ),
                 ],
               ),
@@ -591,7 +591,7 @@ class _MedicationChoice extends StatelessWidget {
                         const SizedBox(height: 1),
                         a ? Text(
                          medication.A1,
-                        style: const TextStyle(color: Color(0xFF6B7280)),
+                        style: const TextStyle(color: Color(0xFF5B6D69)),
                       ) : const SizedBox.shrink(),
                         Text(
                           a
@@ -600,7 +600,7 @@ class _MedicationChoice extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Color(0xFF6B7280),
+                            color: Color(0xFF5B6D69),
                             fontSize: 12.5,
                           ),
                         ),
@@ -663,9 +663,9 @@ class MedicationInfoScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFE6F4F0),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                border: Border.all(color: const Color(0xFFBFE9E6)),
               ),
               child: Text(
                 appText(
@@ -674,7 +674,7 @@ class MedicationInfoScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF0969E8),
+                  color: Color(0xFF007359),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -731,7 +731,7 @@ class MedicationInfoScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFF6B7280),
+                color: Color(0xFF5B6D69),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -846,9 +846,9 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFE6F4F0),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                border: Border.all(color: const Color(0xFFBFE9E6)),
               ),
               child: Text(
                 appText(
@@ -857,7 +857,7 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
                 ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF0969E8),
+                  color: Color(0xFF007359),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -915,7 +915,7 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               color: i == 0
-                                  ? const Color(0xFF111827)
+                                  ? const Color(0xFF000D0D)
                                   : const Color(0xFF9CA3AF),
                             ),
                           ),
@@ -926,8 +926,8 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
                               style: TextStyle(
                                 height: 1.4,
                                 color: i == 0
-                                    ? const Color(0xFF111827)
-                                    : const Color(0xFF6B7280),
+                                    ? const Color(0xFF000D0D)
+                                    : const Color(0xFF5B6D69),
                                 fontWeight: i == 0
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -958,7 +958,7 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
   }
 
   Widget _videoPlaceholder() => Container(
-        color: const Color(0xFF111827),
+        color: const Color(0xFF000D0D),
         alignment: Alignment.center,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1245,13 +1245,13 @@ class _OnboardingFrame extends StatelessWidget {
                               width: 72,
                               height: 72,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F6FF),
+                                color: const Color(0xFFE6F4F0),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Icon(
                                 icon,
                                 size: 39,
-                                color: const Color(0xFF0969E8),
+                                color: const Color(0xFF007359),
                               ),
                             ),
                           ),
@@ -1261,7 +1261,7 @@ class _OnboardingFrame extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827),
+                              color: Color(0xFF000D0D),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -1270,7 +1270,7 @@ class _OnboardingFrame extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 17,
                               height: 1.55,
-                              color: Color(0xFF6B7280),
+                              color: Color(0xFF5B6D69),
                             ),
                           ),
                           const SizedBox(height: 28),
@@ -1500,12 +1500,12 @@ class _TriggersScreenState extends State<TriggersScreen> {
               final item = triggersList[index];
               final isSelected = selectedTriggers.contains(item.id);
               return Material(
-                color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+                color: isSelected ? const Color(0xFFE6F4F0) : Colors.white,
                 shape: RoundedRectangleBorder(
                   side: BorderSide(
                     color: isSelected
-                        ? const Color(0xFF1677F2)
-                        : const Color(0xFFE5E7EB),
+                        ? const Color(0xFF007359)
+                        : const Color(0xFFE3E0E3),
                     width: isSelected ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -1522,8 +1522,8 @@ class _TriggersScreenState extends State<TriggersScreen> {
                           item.icon,
                           size: 30,
                           color: isSelected
-                              ? const Color(0xFF1677F2)
-                              : const Color(0xFF6B7280),
+                              ? const Color(0xFF007359)
+                              : const Color(0xFF5B6D69),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -1535,8 +1535,8 @@ class _TriggersScreenState extends State<TriggersScreen> {
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                             color: isSelected
-                                ? const Color(0xFF1677F2)
-                                : const Color(0xFF374151),
+                                ? const Color(0xFF007359)
+                                : const Color(0xFF1C3A36),
                           ),
                         ),
                       ],
@@ -1552,7 +1552,7 @@ class _TriggersScreenState extends State<TriggersScreen> {
             controller: _customController,
             decoration: InputDecoration(
               hintText: a ? 'أضف مهيج ربو آخر' : 'Add another trigger',
-              prefixIcon: const Icon(Icons.add, color: Color(0xFF6B7280)),
+              prefixIcon: const Icon(Icons.add, color: Color(0xFF5B6D69)),
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
@@ -1561,15 +1561,15 @@ class _TriggersScreenState extends State<TriggersScreen> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                borderSide: const BorderSide(color: Color(0xFFE3E0E3)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                borderSide: const BorderSide(color: Color(0xFFE3E0E3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF1677F2), width: 1.5),
+                borderSide: const BorderSide(color: Color(0xFF007359), width: 1.5),
               ),
             ),
           ),

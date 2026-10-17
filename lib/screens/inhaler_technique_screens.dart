@@ -129,7 +129,7 @@ class InhalerDeviceListScreen extends StatelessWidget {
                     fontSize: 12.5,
                     color: device.quickBreath
                         ? Colors.deepOrange
-                        : AppColors.teal,
+                        : AppColors.green,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -234,7 +234,7 @@ class _InhalerDeviceDetailScreenState
         children: [
           AppCard(
             color:
-                device.quickBreath ? Color(0xFFFFF7ED) : Color(0xFFEFF6FF),
+                device.quickBreath ? Color(0xFFFFF7ED) : Color(0xFFE6F4F0),
             child: Row(
               children: [
                 Icon(
@@ -343,7 +343,7 @@ class _InhalerDeviceDetailScreenState
           child: LinearProgressIndicator(
             value: total == 0 ? 0 : done / total,
             minHeight: 8,
-            backgroundColor: Color(0xFFE5E7EB),
+            backgroundColor: Color(0xFFE3E0E3),
             valueColor: AlwaysStoppedAnimation(
               percent == 100 ? Colors.green : AppColors.blue,
             ),
@@ -426,7 +426,7 @@ class _InhalerDeviceDetailScreenState
 
     final color = switch (tier) {
       _ResultTier.perfect => Colors.green,
-      _ResultTier.good => Color(0xFF0787F7),
+      _ResultTier.good => Color(0xFF007359),
       _ResultTier.fair => Color(0xFFD97706),
       _ResultTier.low => Color(0xFFDC2626),
     };

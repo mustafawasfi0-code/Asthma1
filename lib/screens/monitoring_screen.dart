@@ -260,7 +260,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         ? TextDirection.rtl
         : TextDirection.ltr,
     child: Scaffold(
-      backgroundColor: const Color(0xFFF3F9FC),
+      backgroundColor: const Color(0xFFF5F8F7),
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: const AppBackButton(),
@@ -277,8 +277,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
               icon: const Icon(Icons.description_outlined),
               label: Text(appText('Doctor report', 'تقرير الطبيب')),
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFFEAF4FF),
-                foregroundColor: const Color(0xFF087CF0),
+                backgroundColor: const Color(0xFFE6F4F0),
+                foregroundColor: const Color(0xFF007359),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(13),
                 ),
@@ -344,7 +344,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                 height: 5,
                 decoration: BoxDecoration(
                   color: reached
-                      ? const Color(0xFF087CF0)
+                      ? const Color(0xFF007359)
                       : const Color(0xFFE3E8EF),
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -363,7 +363,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                  color: active ? const Color(0xFF087CF0) : AppColors.muted,
+                  color: active ? const Color(0xFF007359) : AppColors.muted,
                 ),
               ),
             );
@@ -462,8 +462,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                   icon: const Icon(Icons.check_circle_outline),
                   label: Text(appText('No symptoms', 'لا توجد أعراض')),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF087CF0),
-                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                    foregroundColor: const Color(0xFF007359),
+                    side: const BorderSide(color: Color(0xFFBFE9E6)),
                   ),
                 ),
               ),
@@ -498,8 +498,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             symptomSeverities[e.key] = 0;
           }
         }),
-        selectedColor: const Color(0xFFDCEEFF),
-        checkmarkColor: const Color(0xFF087CF0),
+        selectedColor: const Color(0xFFE6F4F0),
+        checkmarkColor: const Color(0xFF007359),
       );
     }).toList(),
   );
@@ -526,7 +526,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0xFFE3E0E3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,7 +625,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                     selected: active,
                     label: Text(AppState.instance.arabic ? e.value.$2 : e.value.$1),
                     onSelected: (_) => setState(() => adherenceLevel = e.key),
-                    selectedColor: const Color(0xFFDCEEFF),
+                    selectedColor: const Color(0xFFE6F4F0),
                     backgroundColor: Colors.white,
                   );
                 }).toList(),
@@ -707,7 +707,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                       }
                     });
                   },
-                  activeColor: const Color(0xFF087CF0),
+                  activeColor: const Color(0xFF007359),
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
                 );
@@ -790,14 +790,25 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
+                height: 56,
                 child: OutlinedButton.icon(
                   key: const ValueKey('no_triggers'),
                   onPressed: saving ? null : _noTriggers,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(appText('No triggers', 'لا توجد مهيجات')),
+                  icon: const Icon(Icons.verified_outlined, size: 24),
+                  label: Text(
+                    appText('No triggers', 'لا توجد مهيجات'),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF087CF0),
-                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                    foregroundColor: AppColors.green,
+                    backgroundColor: const Color(0xFFE3F5EF),
+                    side: const BorderSide(color: AppColors.green, width: 1.6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -826,8 +837,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         onSelected: (_) => setState(
           () => active ? selected.remove(e.key) : selected.add(e.key),
         ),
-        selectedColor: const Color(0xFFDCEEFF),
-        checkmarkColor: const Color(0xFF087CF0),
+        selectedColor: const Color(0xFFE6F4F0),
+        checkmarkColor: const Color(0xFF007359),
       );
     }).toList(),
   );
@@ -870,7 +881,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE8EDF2)),
+              border: Border.all(color: const Color(0xFFE3E0E3)),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x12101828),
@@ -885,7 +896,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                 Text(
                   appText('Record a peak flow reading', 'سجل قراءة ذروة التدفق'),
                   style: const TextStyle(
-                    color: Color(0xFF10131A),
+                    color: Color(0xFF000D0D),
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -914,7 +925,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                       Text(
                         appText('Reading ${index + 1}', 'القراءة ${index + 1}'),
                         style: const TextStyle(
-                          color: Color(0xFF333943),
+                          color: Color(0xFF1C3A36),
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -930,7 +941,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.start,
                       style: const TextStyle(
-                        color: Color(0xFF0A0D12),
+                        color: Color(0xFF000D0D),
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -944,12 +955,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                         fillColor: Colors.white,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(11),
-                          borderSide: const BorderSide(color: Color(0xFFDDE2E8)),
+                          borderSide: const BorderSide(color: Color(0xFFE3E0E3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(11),
                           borderSide: const BorderSide(
-                            color: Color(0xFF087CF0),
+                            color: Color(0xFF007359),
                             width: 1.4,
                           ),
                         ),
@@ -1003,7 +1014,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                             });
                           },
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF087CF0),
+                            backgroundColor: const Color(0xFF007359),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(11),
                             ),
@@ -1161,7 +1172,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     width: double.infinity,
     padding: const EdgeInsets.fromLTRB(13, 11, 13, 10),
     decoration: BoxDecoration(
-      color: const Color(0xFFEEF3FF),
+      color: const Color(0xFFE6F4F0),
       borderRadius: BorderRadius.circular(11),
     ),
     child: Column(
@@ -1169,12 +1180,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.info_outline, color: Color(0xFF087CF0), size: 20),
+            const Icon(Icons.info_outline, color: Color(0xFF007359), size: 20),
             const SizedBox(width: 7),
             Text(
               appText('Peak flow zones:', 'مناطق ذروة التدفق:'),
               style: const TextStyle(
-                color: Color(0xFF173E83),
+                color: Color(0xFF1C3A36),
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
               ),
@@ -1218,7 +1229,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           child: Text(
             text,
             style: const TextStyle(
-              color: Color(0xFF173E83),
+              color: Color(0xFF1C3A36),
               fontSize: 13,
               height: 1.2,
               fontWeight: FontWeight.w600,
@@ -1248,10 +1259,10 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: const Color(0xFFE7F2FF),
+          color: const Color(0xFFE6F4F0),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Icon(icon, color: const Color(0xFF087CF0), size: 34),
+        child: Icon(icon, color: const Color(0xFF007359), size: 34),
       ),
       const SizedBox(width: 16),
       Expanded(child: Column(
@@ -1837,13 +1848,13 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
       PeakFlowZone.green => const Color(0xFF0BA957),
       PeakFlowZone.yellow => const Color(0xFFF2B400),
       PeakFlowZone.red => const Color(0xFFF0000B),
-      PeakFlowZone.unavailable => const Color(0xFF526AA0),
+      PeakFlowZone.unavailable => const Color(0xFF5B6D69),
     };
     final pale = switch (zone) {
       PeakFlowZone.green => const Color(0xFFE6FAEF),
       PeakFlowZone.yellow => const Color(0xFFFFF7DA),
       PeakFlowZone.red => const Color(0xFFFFE5E8),
-      PeakFlowZone.unavailable => const Color(0xFFEDF1FA),
+      PeakFlowZone.unavailable => const Color(0xFFEEF2F1),
     };
     final title = switch (zone) {
       PeakFlowZone.green => appText(
@@ -1996,7 +2007,7 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF2F7FA),
                     borderRadius: BorderRadius.circular(17),
-                    border: Border.all(color: const Color(0xFFD9E1E6)),
+                    border: Border.all(color: const Color(0xFFE3E0E3)),
                   ),
                   child: Column(
                     children: [
@@ -2216,7 +2227,7 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                       Text(
                         action,
                         textAlign: TextAlign.center,style: const TextStyle(
-                          color: Color(0xFF202630),
+                          color: Color(0xFF1C3A36),
                           fontSize: 14,
                           height: 1.45,
                           fontWeight: FontWeight.w600,

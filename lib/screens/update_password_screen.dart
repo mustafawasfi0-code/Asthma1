@@ -78,7 +78,7 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
           elevation: 0,
           title: Text(
             a ? 'تعيين كلمة مرور جديدة' : 'Set New Password',
-            style: const TextStyle(color: Colors.black, fontSize: 18),
+            style: const TextStyle(color: AppColors.black, fontSize: 18),
           ),
           iconTheme: const IconThemeData(color: Colors.black),
         ),
@@ -115,12 +115,8 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
                     const SizedBox(height: 32),
                     SizedBox(
                       height: 54,
-                      child: FilledButton(
+                      child: GradientButton(
                         onPressed: _loading ? null : _updatePassword,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.blue,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
                         child: _loading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : Text(a ? 'حفظ وتحديث' : 'Save & Update', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
