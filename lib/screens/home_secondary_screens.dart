@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_state.dart';
+import '../core/app_theme.dart';
 import '../models/medication.dart';
 import '../repositories/home_repository.dart';
 import '../repositories/reminder_repository.dart';
@@ -163,8 +164,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
     _load();
   }
 
-  Future<void> _load() async {
-    if (mounted) {
+  Future<void> _load({bool silent = false}) async {
+    if (mounted && !silent) {
       setState(() {
         loading = true;
         error = null;
@@ -274,7 +275,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           time: value,
         );
       }
-      await _load();
+      await _load(silent: true);
     } catch (_) {
       _message(
         appText(
@@ -291,7 +292,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Future<void> _toggle(Map<String, dynamic> row, bool value) async {
     try {
       await repository.setEnabled(row['id'].toString(), value);
-      await _load();
+      await _load(silent: true);
     } catch (_) {
       _message(appText('Could not update reminder.', 'تعذر تحديث التذكير.'));
     }
@@ -300,7 +301,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Future<void> _delete(Map<String, dynamic> row) async {
     try {
       await repository.delete(row['id'].toString());
-      await _load();
+      await _load(silent: true);
     } catch (_) {
       _message(appText('Could not delete reminder.', 'تعذر حذف التذكير.'));
     }
@@ -314,26 +315,231 @@ class _RemindersScreenState extends State<RemindersScreen> {
     }
   }
 
+  List<Map<String, dynamic>> get _sorted {
+    final list = [...reminders];
+    list.sort(
+      (a, b) => _time(a['time_of_day']).compareTo(_time(b['time_of_day'])),
+    );
+    return list;
+  }
+
+  /// "17:05:00" -> ("5:05", "PM")
+  (String, String) _clock(dynamic value) {
+    final parts = value?.toString().split(':') ?? const [];
+    if (parts.length < 2) return ('--:--', '');
+    final h = int.tryParse(parts[0]) ?? 0;
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    return ('$h12:${parts[1]}', h < 12 ? appText('AM', 'ص') : appText('PM', 'م'));
+  }
+
+  Widget _summary() {
+    final active = reminders.where((r) => r['enabled'] == true).length;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppGradients.mint,
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: AppGradients.primary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.notifications_active_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appText('Daily reminders', 'التذكيرات اليومية'),
+                  style: const TextStyle(
+                    color: AppColors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  appText(
+                    '$active of ${reminders.length} active',
+                    '$active من ${reminders.length} مفعّل',
+                  ),
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(Map<String, dynamic> row) {
+    final on = row['enabled'] == true;
+    final (hm, suffix) = _clock(row['time_of_day']);
+    return AppCard(
+      onTap: () => _edit(row),
+      child: Row(
+        children: [
+          Opacity(
+            opacity: on ? 1 : .5,
+            child: Container(
+              width: 82,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: on ? AppColors.softGreen : AppColors.grey,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text(
+                      hm,
+                      style: TextStyle(
+                        color: on ? AppColors.green : AppColors.darkGreen,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      suffix,
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Opacity(
+              opacity: on ? 1 : .5,
+              child: Text(
+                row['title']?.toString() ?? '',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          Switch(value: on, onChanged: (value) => _toggle(row, value)),
+          PopupMenuButton<String>(
+            tooltip: '',
+            icon: const Icon(Icons.more_vert, color: AppColors.muted),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            onSelected: (value) =>
+                value == 'edit' ? _edit(row) : _delete(row),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 20),
+                    const SizedBox(width: 10),
+                    Text(appText('Edit', 'تعديل')),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      appText('Delete', 'حذف'),
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState() => AppCard(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      child: Column(
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: AppColors.softOcean,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.green,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            appText('No reminders yet', 'لا توجد تذكيرات بعد'),
+            style: const TextStyle(
+              color: AppColors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            appText(
+              'Add a reminder so you never miss your medicine or daily check.',
+              'أضف تذكيراً حتى لا تنسى دواءك أو فحصك اليومي.',
+            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.muted, height: 1.4),
+          ),
+        ],
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => PageFrame(
     title: appText('Reminders', 'التذكيرات'),
     subtitle: appText('Manage daily reminders', 'إدارة التذكيرات اليومية'),
     child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: FilledButton.icon(
-            key: const ValueKey('add_reminder'),
-            onPressed: saving ? null : _edit,
-            icon: const Icon(Icons.add),
-            label: Text(appText('Add reminder', 'إضافة تذكير')),
-          ),
-        ),
-        const SizedBox(height: 12),
         if (loading)
           const Padding(
-            padding: EdgeInsets.all(40),
-            child: CircularProgressIndicator(),
+            padding: EdgeInsets.all(60),
+            child: Center(child: CircularProgressIndicator()),
           )
         else if (error != null)
           AppCard(
@@ -348,48 +554,23 @@ class _RemindersScreenState extends State<RemindersScreen> {
               ],
             ),
           )
-        else if (reminders.isEmpty)
-          AppCard(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(appText('No reminders yet', 'لا توجد تذكيرات بعد')),
-            ),
-          )
-        else
-          ...reminders.map(
-            (row) => AppCard(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Switch(
-                  value: row['enabled'] == true,
-                  onChanged: (value) => _toggle(row, value),
-                ),
-                title: Text(
-                  row['title']?.toString() ?? '',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: Text(_time(row['time_of_day'])),
-                ),
-                trailing: Wrap(
-                  spacing: 2,
-                  children: [
-                    IconButton(
-                      tooltip: appText('Edit', 'تعديل'),
-                      onPressed: () => _edit(row),
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
-                    IconButton(
-                      tooltip: appText('Delete', 'حذف'),
-                      onPressed: () => _delete(row),
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        else ...[
+          if (reminders.isNotEmpty) ...[
+            _summary(),
+            const SizedBox(height: 14),
+          ],
+          PrimaryButton(
+            key: const ValueKey('add_reminder'),
+            text: appText('Add reminder', 'إضافة تذكير'),
+            icon: Icons.add,
+            onPressed: saving ? null : () => _edit(),
           ),
+          const SizedBox(height: 18),
+          if (reminders.isEmpty)
+            _emptyState()
+          else
+            ..._sorted.map(_tile),
+        ],
       ],
     ),
   );

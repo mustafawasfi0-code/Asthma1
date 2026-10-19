@@ -107,7 +107,7 @@ class LearnScreen extends StatelessWidget {
           ),
         ),
         AppCard(
-          onTap: () => c.go('/community'),
+          onTap: () => c.push('/community'),
           color: AppColors.softOcean,
           child: ListTile(
             leading: Icon(Icons.groups, color: AppColors.pink),
@@ -159,7 +159,7 @@ class LearnScreen extends StatelessWidget {
   ) => Padding(
     padding: EdgeInsets.only(bottom: 6),
     child: AppCard(
-      onTap: () => c.go(r),
+      onTap: () => c.push(r),
       child: Row(
         children: [
           Container(

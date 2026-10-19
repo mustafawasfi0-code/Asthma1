@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_state.dart';
 import '../core/app_theme.dart';
@@ -22,7 +23,8 @@ class PageFrame extends StatelessWidget {
     final a = AppState.instance.arabic;
     return Directionality(
       textDirection: a ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
+      child: BackScope(
+        child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -73,8 +75,36 @@ class PageFrame extends StatelessWidget {
         ),
         bottomNavigationBar: showNav ? AppNav() : null,
       ),
+      ),
     );
   }
+}
+
+/// Makes the system/physical back button behave naturally:
+///  1. [onBack] gets the first chance (return true when it handled the press),
+///  2. otherwise pops the screen if there is one underneath,
+///  3. otherwise (a root tab) goes Home, and Home exits the app.
+class BackScope extends StatelessWidget {
+  const BackScope({super.key, required this.child, this.onBack});
+  final Widget child;
+  final bool Function()? onBack;
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) return;
+      if (onBack?.call() == true) return;
+      if (context.canPop()) {
+        context.pop();
+      } else if (GoRouterState.of(context).uri.path != '/') {
+        context.go('/');
+      } else {
+        SystemNavigator.pop();
+      }
+    },
+    child: child,
+  );
 }
 
 class AppBackButton extends StatelessWidget {

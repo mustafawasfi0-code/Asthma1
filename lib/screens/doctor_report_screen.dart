@@ -46,7 +46,8 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
     textDirection: AppState.instance.arabic
         ? TextDirection.rtl
         : TextDirection.ltr,
-    child: Scaffold(
+    child: BackScope(
+      child: Scaffold(
       backgroundColor: const Color(0xFFF5F8F7),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -138,6 +139,7 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
         ),
       ),
       bottomNavigationBar: const AppNav(),
+    ),
     ),
   );
 

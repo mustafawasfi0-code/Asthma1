@@ -12,6 +12,79 @@ import '../screens/secondary_screens.dart';
 import '../screens/home_secondary_screens.dart';
 import '../screens/update_password_screen.dart'; // شاشة تحديث كلمة المرور الجديدة
 
+// ---------------------------------------------------------------------------
+// Direction-aware bottom-tab transitions
+// ---------------------------------------------------------------------------
+int? _lastTab;
+bool _tabSwitching = false;
+double _outgoingDir = 1;
+final Map<LocalKey, double> _slideDirByPage = {};
+
+/// Builds a bottom-tab page. Moving to a tab on the right slides the new page
+/// in from the right (and the old page out to the left); moving left does the
+/// opposite. The direction follows what the user sees, so it is mirrored in
+/// Arabic where the tab bar runs right-to-left.
+CustomTransitionPage<void> _tabPage(
+  GoRouterState state,
+  int index,
+  Widget child,
+) {
+  final key = state.pageKey;
+  final previous = _lastTab;
+  if (previous != null && previous != index) {
+    final mirrored = AppState.instance.arabic ? -1.0 : 1.0;
+    final dir = (index > previous ? 1.0 : -1.0) * mirrored;
+    _slideDirByPage[key] = dir;
+    _outgoingDir = dir;
+    _tabSwitching = true;
+    Future<void>.delayed(
+      const Duration(milliseconds: 450),
+      () => _tabSwitching = false,
+    );
+  } else {
+    _slideDirByPage.putIfAbsent(key, () => 0);
+  }
+  _lastTab = index;
+
+  return CustomTransitionPage<void>(
+    key: key,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 340),
+    reverseTransitionDuration: const Duration(milliseconds: 340),
+    transitionsBuilder: (context, animation, secondaryAnimation, page) {
+      final enterDir = _slideDirByPage[key] ?? 0;
+      Widget result = page;
+      if (_tabSwitching) {
+        // The page being replaced slides away in the opposite direction.
+        result = SlideTransition(
+          position: Tween<Offset>(
+            begin: Offset.zero,
+            end: Offset(-_outgoingDir, 0),
+          ).animate(
+            CurvedAnimation(
+              parent: secondaryAnimation,
+              curve: Curves.easeInOutCubic,
+            ),
+          ),
+          child: result,
+        );
+      }
+      if (enterDir == 0) {
+        return FadeTransition(opacity: animation, child: result);
+      }
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset(enterDir, 0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+        ),
+        child: result,
+      );
+    },
+  );
+}
+
 final appRouter = GoRouter(
   refreshListenable: AppState.instance,
   initialLocation: '/auth',
@@ -85,12 +158,15 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/',
-      builder: (context, state) =>
-          _LanguageRefresh(builder: (_) => DashboardScreen()),
+      pageBuilder: (context, state) => _tabPage(
+        state,
+        0,
+        _LanguageRefresh(builder: (_) => DashboardScreen()),
+      ),
     ),
     GoRoute(
       path: '/monitoring',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final tabParam = state.uri.queryParameters['tab'];
         final initialTab = switch (tabParam) {
           null => 0,        // no query param at all → bottom nav bar
@@ -98,8 +174,12 @@ final appRouter = GoRouter(
           'triggers' => 2,
           _ => 3,            // 'peak-flow', 'inhaler', or anything else
         };
-        return _LanguageRefresh(
-          builder: (_) => MonitoringScreen(initialTab: initialTab),
+        return _tabPage(
+          state,
+          1,
+          _LanguageRefresh(
+            builder: (_) => MonitoringScreen(initialTab: initialTab),
+          ),
         );
       },
     ),
@@ -110,13 +190,19 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/action-plan',
-      builder: (context, state) =>
-          _LanguageRefresh(builder: (_) => ActionPlanScreen()),
+      pageBuilder: (context, state) => _tabPage(
+        state,
+        2,
+        _LanguageRefresh(builder: (_) => ActionPlanScreen()),
+      ),
     ),
     GoRoute(
       path: '/learn',
-      builder: (context, state) =>
-          _LanguageRefresh(builder: (_) => LearnScreen()),
+      pageBuilder: (context, state) => _tabPage(
+        state,
+        3,
+        _LanguageRefresh(builder: (_) => LearnScreen()),
+      ),
     ),
     GoRoute(
       path: '/learn/inhaler-technique',
@@ -146,8 +232,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/profile',
-      builder: (context, state) =>
-          _LanguageRefresh(builder: (_) => ProfileScreen()),
+      pageBuilder: (context, state) => _tabPage(
+        state,
+        4,
+        _LanguageRefresh(builder: (_) => ProfileScreen()),
+      ),
     ),
     GoRoute(
       path: '/community',

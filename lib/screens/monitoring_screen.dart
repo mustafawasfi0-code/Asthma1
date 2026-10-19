@@ -254,12 +254,22 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
     _flowController.jumpToPage(4);
   }
 
+  bool _handleBack() {
+    if (pageIndex > 0) {
+      _goBack();
+      return true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) => Directionality(
     textDirection: AppState.instance.arabic
         ? TextDirection.rtl
         : TextDirection.ltr,
-    child: Scaffold(
+    child: BackScope(
+      onBack: _handleBack,
+      child: Scaffold(
       backgroundColor: const Color(0xFFF5F8F7),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -322,6 +332,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         ),
       ),
       bottomNavigationBar: const AppNav(),
+    ),
     ),
   );
 

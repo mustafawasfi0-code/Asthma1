@@ -284,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: () => c.go('/report'),
+                onPressed: () => c.push('/report'),
                 icon: const Icon(Icons.description_outlined),
                 label: Text(appText('Doctor Report', 'تقرير الطبيب')),
               ),

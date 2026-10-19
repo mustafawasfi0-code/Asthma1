@@ -759,7 +759,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icons.description_outlined,
             color: AppColors.darkGreen,
             label: appText('Patient Record', 'سجلّ المريض'),
-            onTap: () => context.go('/report'),
+            onTap: () => context.push('/report'),
           ),
           const SizedBox.shrink(),
         ),
@@ -910,7 +910,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             trailing: const Icon(Icons.chevron_right_rounded),
                             onTap: () {
                               Navigator.of(sheetContext).pop();
-                              context.go('/medications/info/${medicine.code}');
+                              context.push('/medications/info/${medicine.code}');
                             },
                           ),
                         ),
@@ -943,7 +943,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final reminders = home?.reminders ?? const [];
     return _pressable(
       key: const ValueKey('home_reminders'),
-      onTap: () => context.go('/reminders'),
+      onTap: () => context.push('/reminders'),
       borderRadius: 24,
       child: _surface(
         padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),

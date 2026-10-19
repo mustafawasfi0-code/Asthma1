@@ -101,7 +101,7 @@ class InhalerDeviceListScreen extends StatelessWidget {
   Widget _deviceCard(BuildContext context, InhalerDevice device) => Padding(
     padding: EdgeInsets.only(bottom: 12),
     child: AppCard(
-      onTap: () => context.go('/learn/inhaler-technique/${device.id}'),
+      onTap: () => context.push('/learn/inhaler-technique/${device.id}'),
       child: Row(
         children: [
           Icon(_categoryIcon(device.categoryId), color: AppColors.teal),
