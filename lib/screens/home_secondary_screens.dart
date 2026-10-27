@@ -275,6 +275,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           time: value,
         );
       }
+      await NotificationService.requestPermission();
       await _load(silent: true);
     } catch (_) {
       _message(

@@ -9,6 +9,7 @@ import '../models/home_data.dart';
 import '../models/medication.dart';
 import '../models/weather_status.dart';
 import '../repositories/home_repository.dart';
+import '../repositories/reminder_repository.dart';
 import '../services/emergency_call_service.dart';
 import '../services/notification_service.dart';
 import '../services/weather_service.dart';
@@ -42,8 +43,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    NotificationService.requestPermission();
+    NotificationService.requestPermission().whenComplete(_syncNotifications);
     _load();
+  }
+
+  /// Makes sure every saved reminder has a scheduled phone notification
+  /// (covers fresh installs, new logins and reminders edited elsewhere).
+  Future<void> _syncNotifications() async {
+    try {
+      await NotificationService.syncReminders(await ReminderRepository().loadAll());
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -248,8 +257,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 16),
                           _streakCard(),
                           const SizedBox(height: 16),
-                          _startDailyCheckButton(context),
-                          const SizedBox(height: 12),
                           _shortcutGrid(context),
                           const SizedBox(height: 22),
                           _reminders(context, data),
@@ -707,14 +714,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
 
-  Widget _startDailyCheckButton(BuildContext context) => _shortcut(
-        key: 'home_pef',
-        icon: Icons.monitor_heart_outlined,
-        color: AppColors.green,
-        label: appText('Start Daily Check', 'ابدأ الفحص اليومي'),
-        onTap: () => context.go('/monitoring?tab=symptoms'),
-      );
-
   void _openMedications(BuildContext context) {
     final medicines = data?.medications ?? const <Medication>[];
     if (medicines.isEmpty) {
@@ -739,12 +738,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         row(
           _shortcut(
+            key: 'home_pef',
+            icon: Icons.monitor_heart_outlined,
+            color: AppColors.green,
+            label: appText('Start Daily Check', 'ابدأ الفحص اليومي'),
+            onTap: () => context.go('/monitoring?tab=symptoms'),
+          ),
+          _shortcut(
             key: 'home_learn',
             icon: Icons.menu_book_outlined,
             color: AppColors.green,
             label: appText('Learn', 'تعلّم'),
             onTap: () => context.go('/learn'),
           ),
+        ),
+        row(
           _shortcut(
             key: 'home_medication_card',
             icon: Icons.medication_outlined,
@@ -752,8 +760,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: appText('My Medications', 'أدويتي'),
             onTap: () => _openMedications(context),
           ),
-        ),
-        row(
           _shortcut(
             key: 'home_patient_record',
             icon: Icons.description_outlined,
@@ -761,7 +767,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: appText('Patient Record', 'سجلّ المريض'),
             onTap: () => context.push('/report'),
           ),
-          const SizedBox.shrink(),
         ),
       ],
     );

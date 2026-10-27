@@ -421,6 +421,31 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('no_symptoms'),
+                  onPressed: saving ? null : _noSymptoms,
+                  icon: const Icon(Icons.verified_outlined, size: 24),
+                  label: Text(
+                    appText('No symptoms', 'لا توجد أعراض'),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.green,
+                    backgroundColor: const Color(0xFFE3F5EF),
+                    side: const BorderSide(color: AppColors.green, width: 1.6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
               Text(
                 appText('Select your symptoms', 'اختر الأعراض التي لديك'),
                 style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
@@ -464,20 +489,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                     ? null
                     : _saveSymptoms,
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  key: const ValueKey('no_symptoms'),
-                  onPressed: saving ? null : _noSymptoms,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(appText('No symptoms', 'لا توجد أعراض')),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF007359),
-                    side: const BorderSide(color: Color(0xFFBFE9E6)),
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),
