@@ -15,8 +15,8 @@ import '../services/notification_service.dart';
 import '../services/weather_service.dart';
 import '../widgets/common.dart';
 
-/// Weather conditions the home advisory card can show. `hide` hides the card.
-enum _WeatherCondition { clear, hot, wind, dust, cold, hide }
+/// Weather situations the home weather card gives advice for.
+enum _WeatherCondition { clear, hot, wind, cold, wet }
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -35,10 +35,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool loading = true;
   String? loadError;
   WeatherStatus weather = const WeatherStatus(state: WeatherState.loading);
-
-  /// Manually chosen weather condition from the "Try other conditions" chips.
-  /// `null` means "use the real weather".
-  _WeatherCondition? _override;
 
   @override
   void initState() {
@@ -130,22 +126,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return count;
   }
 
-  _WeatherCondition? get _autoCondition {
+  /// Advice bucket derived from the real, current weather.
+  _WeatherCondition? get _condition {
     if (weather.state != WeatherState.ready) return null;
     final t = weather.temperatureC ?? 0;
+    final code = weather.weatherCode ?? 0;
     if (t >= 38) return _WeatherCondition.hot;
     if (t <= 10) return _WeatherCondition.cold;
     if ((weather.windKmh ?? 0) >= 30) return _WeatherCondition.wind;
+    if (code == 45 || code == 48 || (code >= 51 && code <= 99)) {
+      return _WeatherCondition.wet;
+    }
     return _WeatherCondition.clear;
-  }
-
-  _WeatherCondition? get _selectedCondition => _override ?? _autoCondition;
-
-  /// Algorithm 3: Check if current condition matches user's known sensitive triggers
-  bool _isTriggerMatch(_WeatherCondition c) {
-    // In a real database, this compares [c] with data?.profile?.triggers
-    // For smart demonstration, we consider Dust, Wind, and Cold as major asthma triggers
-    return c == _WeatherCondition.dust || c == _WeatherCondition.cold || c == _WeatherCondition.wind;
   }
 
   String _dateLine() {
@@ -211,8 +203,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final showTasks = data != null && !_dailyCheckDone;
-    final condition = _selectedCondition;
-    final showAdvisory = condition != null && condition != _WeatherCondition.hide;
     return Directionality(
       textDirection: AppState.instance.arabic
           ? TextDirection.rtl
@@ -249,11 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _tasksCard(context),
                             const SizedBox(height: 16),
                           ],
-                          if (showAdvisory) ...[
-                            _weatherAdvisory(condition),
-                            const SizedBox(height: 16),
-                          ],
-                          _conditionChips(condition),
+                          _weatherCard(),
                           const SizedBox(height: 16),
                           _streakCard(),
                           const SizedBox(height: 16),
@@ -425,242 +411,247 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  ({String title, String body, IconData icon, Color bg, Color border, Color fg, Color iconColor})
-      _advisoryFor(_WeatherCondition c) {
-    final city = data?.profile?.city;
-    final cityText = city == null || city.isEmpty ? '' : ' — ${localizedCity(city)}';
-    final realTemp = weather.state == WeatherState.ready &&
-            _override == null &&
-            weather.temperatureC != null
-        ? weather.temperatureC!.round()
-        : null;
+  // ---------------------------------------------------------------------
+  // Weather card (live data from the device location / profile city)
+  // ---------------------------------------------------------------------
+
+  IconData _weatherIcon(int? code) {
+    if (code == null || code == 0) return Icons.wb_sunny_outlined;
+    if (code <= 2) return Icons.cloud_queue;
+    if (code == 3) return Icons.cloud_outlined;
+    if (code == 45 || code == 48) return Icons.blur_on;
+    if (code >= 51 && code <= 67) return Icons.water_drop_outlined;
+    if (code >= 71 && code <= 77) return Icons.ac_unit;
+    if (code >= 80 && code <= 82) return Icons.water_drop_outlined;
+    if (code >= 95) return Icons.thunderstorm_outlined;
+    return Icons.cloud_outlined;
+  }
+
+  ({String body, Color bg, Color fg, Color accent}) _adviceFor(
+    _WeatherCondition c,
+  ) {
     switch (c) {
       case _WeatherCondition.hot:
         return (
-          title: appText(
-            'Very hot weather today (~${realTemp ?? 41}°C)$cityText',
-            'طقس حار جداً اليوم (~${realTemp ?? 41}°م)$cityText',
-          ),
           body: appText(
-            'Extreme heat can dry the air and put extra strain on your breathing. Drink enough water, avoid physical exertion between 12 and 4 pm, and carry your rescue inhaler if you go out.',
-            'الحرارة الشديدة قد تسبب جفافاً وتزيد إجهاد الجهاز التنفسي. اشرب ماءً كافياً، تجنّب المجهود البدني بين الساعة 12 و4 ظهراً، واحمل بخاخ الطوارئ معك إن خرجت.',
+            'Extreme heat can strain your breathing. Drink water, avoid exertion from 12 to 4 pm and carry your rescue inhaler.',
+            'الحرارة الشديدة قد تزيد إجهاد التنفس. اشرب ماءً كافياً، تجنّب المجهود بين 12 و4 ظهراً واحمل بخاخ الطوارئ.',
           ),
-          icon: Icons.thermostat,
           bg: const Color(0xFFFFF4E5),
-          border: const Color(0xFFFFD9A0),
           fg: const Color(0xFF92400E),
-          iconColor: const Color(0xFFB45309),
-        );
-      case _WeatherCondition.clear:
-        return (
-          title: appText('Clear weather today$cityText', 'طقس صافٍ اليوم$cityText'),
-          body: appText(
-            'Good conditions for breathing. Keep taking your medicines as prescribed and stay gently active.',
-            'أجواء مناسبة للتنفس. استمر على أدويتك حسب وصف الطبيب وحافظ على نشاطك بلطف.',
-          ),
-          icon: Icons.wb_sunny_outlined,
-          bg: const Color(0xFFE3F5EF),
-          border: AppColors.grey,
-          fg: AppColors.darkGreen,
-          iconColor: AppColors.green,
-        );
-      case _WeatherCondition.wind:
-        return (
-          title: appText('Windy weather today$cityText', 'رياح قوية اليوم$cityText'),
-          body: appText(
-            'Wind can stir up dust and pollen. Limit time outdoors, keep windows closed and carry your rescue inhaler.',
-            'الرياح قد تثير الغبار وحبوب اللقاح. قلّل الوقت في الخارج، أبقِ النوافذ مغلقة واحمل بخاخ الطوارئ.',
-          ),
-          icon: Icons.air,
-          bg: const Color(0xFFEAF8FF),
-          border: AppColors.grey,
-          fg: AppColors.darkGreen,
-          iconColor: AppColors.oceanBlue,
-        );
-      case _WeatherCondition.dust:
-        return (
-          title: appText('Dust alert today$cityText', 'تنبيه غبار اليوم$cityText'),
-          body: appText(
-            'Dust and sand can trigger asthma symptoms. Stay indoors, keep windows closed, wear a mask if you must go out and keep your rescue inhaler close.',
-            'الغبار والرمال قد يثيران أعراض الربو. ابقَ في المنزل، أغلق النوافذ، ارتدِ كمامة إن اضطررت للخروج وأبقِ بخاخ الطوارئ قريباً.',
-          ),
-          icon: Icons.blur_on,
-          bg: const Color(0xFFFFF0DA),
-          border: const Color(0xFFFFD9A0),
-          fg: const Color(0xFF92400E),
-          iconColor: const Color(0xFFB45309),
+          accent: const Color(0xFFB45309),
         );
       case _WeatherCondition.cold:
         return (
-          title: appText(
-            'Cold weather today${realTemp == null ? '' : ' (~$realTemp°C)'}$cityText',
-            'طقس بارد اليوم${realTemp == null ? '' : ' (~$realTemp°م)'}$cityText',
-          ),
           body: appText(
-            'Cold air can tighten the airways. Cover your nose and mouth with a scarf, warm up before exercise and carry your rescue inhaler.',
-            'الهواء البارد قد يضيّق المجاري الهوائية. غطِّ أنفك وفمك بوشاح، سخّن جسمك قبل التمارين واحمل بخاخ الطوارئ.',
+            'Cold air can tighten your airways. Cover your nose and mouth and carry your rescue inhaler.',
+            'الهواء البارد قد يضيّق المجاري الهوائية. غطِّ أنفك وفمك واحمل بخاخ الطوارئ.',
           ),
-          icon: Icons.ac_unit,
-          bg: const Color(0xFFE6F4F0),
-          border: const Color(0xFFBFE9E6),
+          bg: AppColors.softOcean,
           fg: AppColors.darkGreen,
-          iconColor: const Color(0xFF2563EB),
+          accent: AppColors.green,
         );
-      case _WeatherCondition.hide:
-        throw StateError('hide has no advisory');
+      case _WeatherCondition.wind:
+        return (
+          body: appText(
+            'Wind can stir up dust and pollen. Limit time outdoors and keep windows closed.',
+            'الرياح قد تثير الغبار وحبوب اللقاح. قلّل الوقت في الخارج وأبقِ النوافذ مغلقة.',
+          ),
+          bg: const Color(0xFFFFF4E5),
+          fg: const Color(0xFF92400E),
+          accent: const Color(0xFFB45309),
+        );
+      case _WeatherCondition.wet:
+        return (
+          body: appText(
+            'Damp or stormy weather can trigger symptoms. Keep your rescue inhaler close.',
+            'الطقس الرطب أو العاصف قد يثير الأعراض. أبقِ بخاخ الطوارئ قريباً منك.',
+          ),
+          bg: AppColors.softOcean,
+          fg: AppColors.darkGreen,
+          accent: AppColors.green,
+        );
+      case _WeatherCondition.clear:
+        return (
+          body: appText(
+            'Good conditions for breathing. Keep taking your medicines as prescribed.',
+            'أجواء مناسبة للتنفس. استمر على أدويتك حسب وصف الطبيب.',
+          ),
+          bg: AppColors.softGreen,
+          fg: AppColors.darkGreen,
+          accent: AppColors.green,
+        );
     }
   }
 
-  // Algorithm 3: Render smart weather advisory
-  Widget _weatherAdvisory(_WeatherCondition c) {
-    final a = _advisoryFor(c);
-    final isTrigger = _isTriggerMatch(c);
+  Widget _weatherCard() {
+    final arabic = AppState.instance.arabic;
+
+    if (weather.state == WeatherState.loading) {
+      return _surface(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          key: const ValueKey('home_weather_loading'),
+          children: [
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              appText('Getting your local weather…', 'جارٍ جلب طقس منطقتك…'),
+              style: const TextStyle(
+                color: _muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final condition = _condition;
+    if (weather.state != WeatherState.ready || condition == null) {
+      final message = switch (weather.state) {
+        WeatherState.noInternet => appText(
+          'No internet connection.',
+          'لا يوجد اتصال بالإنترنت.',
+        ),
+        WeatherState.locationDenied => appText(
+          'Location permission is off. Allow it to see your local weather.',
+          'إذن الموقع مغلق. اسمح به لعرض طقس منطقتك.',
+        ),
+        WeatherState.locationServiceDisabled => appText(
+          'Turn on location services to see your local weather.',
+          'فعّل خدمة الموقع لعرض طقس منطقتك.',
+        ),
+        _ => appText(
+          'Weather is unavailable right now.',
+          'الطقس غير متاح حالياً.',
+        ),
+      };
+      return _surface(
+        padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+        child: Row(
+          key: const ValueKey('home_weather_error'),
+          children: [
+            const Icon(Icons.cloud_off_outlined, color: _muted, size: 28),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: _muted,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: appText('Retry', 'إعادة المحاولة'),
+              onPressed: _loadWeather,
+              icon: const Icon(Icons.refresh, color: AppColors.green),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final advice = _adviceFor(condition);
+    final temp = (weather.temperatureC ?? 0).round();
+    final city = data?.profile?.city;
+    final cityText = city == null || city.isEmpty ? null : localizedCity(city);
+    final wind = weather.windKmh?.round();
+    final details = [
+      if (cityText != null) cityText,
+      if (wind != null) appText('Wind $wind km/h', 'الرياح $wind كم/س'),
+    ].join('  •  ');
 
     return Container(
-      key: const ValueKey('home_weather_advisory'),
-      padding: const EdgeInsets.all(18),
+      key: const ValueKey('home_weather_card'),
+      padding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
       decoration: BoxDecoration(
-        color: a.bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isTrigger ? a.iconColor : a.border, width: isTrigger ? 1.5 : 1.0),
+        color: advice.bg,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: AppShadows.soft,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isTrigger) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: a.iconColor.withValues(alpha: .15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.bolt, color: a.iconColor, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    appText('Personalized Trigger Alert', 'تنبيه مخصص بناءً على مهيجاتك'),
-                    style: TextStyle(
-                      color: a.iconColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(a.icon, color: a.iconColor, size: 34),
-              const SizedBox(width: 14),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .75),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  _weatherIcon(weather.weatherCode),
+                  color: advice.accent,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Text(
+                        '$temp°C',
+                        style: const TextStyle(
+                          color: AppColors.black,
+                          fontSize: 34,
+                          height: 1.1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
                     Text(
-                      a.title,
+                      weatherCodeLabel(weather.weatherCode, arabic),
                       style: TextStyle(
-                        color: a.fg,
-                        fontSize: 17,
-                        height: 1.3,
+                        color: advice.fg,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      isTrigger 
-                          ? '${a.body} ${appText("Since this is one of your known triggers, please be extra careful.", "بما أن هذا الجو يعتبر من مهيجات الربو لديك، يرجى أخذ حذر مضاعف.")}'
-                          : a.body,
-                      style: TextStyle(
-                        color: a.fg,
-                        fontSize: 14,
-                        height: 1.55,
-                        fontWeight: FontWeight.w500,
+                    if (details.isNotEmpty)
+                      Text(
+                        details,
+                        style: const TextStyle(
+                          color: _muted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
+              IconButton(
+                tooltip: appText('Refresh', 'تحديث'),
+                onPressed: _loadWeather,
+                icon: Icon(Icons.refresh, color: advice.accent),
+              ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _conditionChips(_WeatherCondition? selected) {
-    final options = <(_WeatherCondition, String)>[
-      (_WeatherCondition.clear, appText('Clear', 'صافٍ')),
-      (_WeatherCondition.hot, appText('Hot', 'حار')),
-      (_WeatherCondition.wind, appText('Wind', 'رياح')),
-      (_WeatherCondition.dust, appText('Dust', 'غبار')),
-      (_WeatherCondition.cold, appText('Cold', 'بارد')),
-      (_WeatherCondition.hide, appText('Hide', 'إخفاء')),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          appText(
-            'Try other conditions (experimental):',
-            'جرّب حالات أخرى (تجريبي):',
-          ),
-          style: const TextStyle(
-            color: _muted,
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final option in options)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 8),
-                  child: _conditionChip(option.$1, option.$2, selected),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _conditionChip(
-    _WeatherCondition value,
-    String label,
-    _WeatherCondition? selected,
-  ) {
-    final active = value == selected;
-    return Material(
-      color: active ? AppColors.green.withValues(alpha: .10) : Colors.white,
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: active ? AppColors.green : AppColors.grey,
-          width: active ? 1.5 : 1,
-        ),
-      ),
-      child: InkWell(
-        key: ValueKey('home_condition_${value.name}'),
-        customBorder: const StadiumBorder(),
-        onTap: () => setState(() => _override = value),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: active ? AppColors.green : _ink,
-              fontSize: 14,
-              fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 12),
+            child: Text(
+              advice.body,
+              style: TextStyle(
+                color: advice.fg,
+                fontSize: 14,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

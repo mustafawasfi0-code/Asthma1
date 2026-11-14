@@ -2,35 +2,111 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_state.dart';
 import '../core/app_theme.dart';
+import '../core/onboarding_medication_state.dart';
 import '../data/inhaler_devices.dart';
+import '../data/medication_inhaler_map.dart';
+import '../models/medication.dart';
+import '../repositories/onboarding_repository.dart';
 import '../widgets/common.dart';
 
-class InhalerDeviceListScreen extends StatelessWidget {
+class InhalerDeviceListScreen extends StatefulWidget {
   const InhalerDeviceListScreen({super.key});
 
   @override
+  State<InhalerDeviceListScreen> createState() =>
+      _InhalerDeviceListScreenState();
+}
+
+class _InhalerDeviceListScreenState extends State<InhalerDeviceListScreen> {
+  bool loading = true;
+  bool showAll = false;
+
+  /// Guides that apply to the medications the patient selected, by device id.
+  final Map<String, InhalerDevice> myDevices = {};
+
+  /// Which selected medications each of those guides is for.
+  final Map<String, List<Medication>> myDeviceMeds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final repository = OnboardingRepository();
+      var codes = await repository.loadSelectedMedicationCodes();
+      if (codes.isEmpty) {
+        codes = {...OnboardingMedicationState.instance.selectedCodes};
+      }
+      final catalog = await repository.loadMedications();
+      for (final medication in catalog.where((m) => codes.contains(m.code))) {
+        for (final device in inhalerGuidesFor(medication)) {
+          myDevices[device.id] = device;
+          (myDeviceMeds[device.id] ??= []).add(medication);
+        }
+      }
+    } catch (_) {
+      // Falls back to the full list of guides below.
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  bool get _personalized => myDevices.isNotEmpty;
+
+  String _medNames(String deviceId) => (myDeviceMeds[deviceId] ?? const [])
+      .map((m) => AppState.instance.arabic ? m.nameAr : m.nameEn)
+      .join(appText(', ', '، '));
+
+  @override
   Widget build(BuildContext context) {
+    final title = appText('Inhaler Technique Guide', 'دليل استخدام البخاخ');
+    if (loading) {
+      return PageFrame(
+        title: title,
+        subtitle: '',
+        child: const Padding(
+          padding: EdgeInsets.all(60),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    // Exactly one relevant guide (e.g. Symbicort -> Turbuhaler): go straight
+    // to its step-by-step instructions.
+    if (_personalized && !showAll && myDevices.length == 1) {
+      return InhalerDeviceDetailScreen(deviceId: myDevices.keys.first);
+    }
+
+    final mine = _personalized && !showAll;
     final categoryOrder = <String>[];
     final byCategory = <String, List<InhalerDevice>>{};
-    for (final device in inhalerDevices) {
-      if (!byCategory.containsKey(device.categoryId)) {
-        categoryOrder.add(device.categoryId);
-        byCategory[device.categoryId] = [];
+    if (!mine) {
+      for (final device in inhalerDevices) {
+        if (!byCategory.containsKey(device.categoryId)) {
+          categoryOrder.add(device.categoryId);
+          byCategory[device.categoryId] = [];
+        }
+        byCategory[device.categoryId]!.add(device);
       }
-      byCategory[device.categoryId]!.add(device);
     }
 
     return PageFrame(
-      title: appText('Inhaler Technique Guide', 'دليل استخدام البخاخ'),
-      subtitle: appText(
-        'Select your device to see its steps',
-        'اختر جهازك لعرض خطوات استخدامه',
-      ),
+      title: title,
+      subtitle: mine
+          ? appText('Guides for your medications', 'أدلة خاصة بأدويتك')
+          : appText(
+              'Select your device to see its steps',
+              'اختر جهازك لعرض خطوات استخدامه',
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!_personalized) _noSelectionCard(context),
           AppCard(
-            color: Color(0xFFF8FAFC),
+            color: AppColors.softGreen,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -49,16 +125,20 @@ class InhalerDeviceListScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6),
-          for (final categoryId in categoryOrder) ...[
-            SectionTitle(
-              appText(
-                byCategory[categoryId]!.first.categoryEn,
-                byCategory[categoryId]!.first.categoryAr,
+          if (mine)
+            for (final device in myDevices.values)
+              _deviceCard(context, device, forMeds: _medNames(device.id))
+          else
+            for (final categoryId in categoryOrder) ...[
+              SectionTitle(
+                appText(
+                  byCategory[categoryId]!.first.categoryEn,
+                  byCategory[categoryId]!.first.categoryAr,
+                ),
               ),
-            ),
-            for (final device in byCategory[categoryId]!)
-              _deviceCard(context, device),
-          ],
+              for (final device in byCategory[categoryId]!)
+                _deviceCard(context, device),
+            ],
           SectionTitle(appText('General Tips', 'نصائح عامة')),
           AppCard(
             child: Column(
@@ -75,7 +155,7 @@ class InhalerDeviceListScreen extends StatelessWidget {
                         Icon(
                           Icons.check_circle_outline,
                           size: 18,
-                          color: AppColors.teal,
+                          color: AppColors.green,
                         ),
                         SizedBox(width: 10),
                         Expanded(
@@ -93,18 +173,74 @@ class InhalerDeviceListScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (_personalized)
+            Center(
+              child: TextButton(
+                onPressed: () => setState(() => showAll = !showAll),
+                child: Text(
+                  showAll
+                      ? appText('Show only my inhaler guides', 'عرض أدلة بخاخاتي فقط')
+                      : appText('Show all inhaler guides', 'عرض جميع أدلة البخاخات'),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _deviceCard(BuildContext context, InhalerDevice device) => Padding(
+  Widget _noSelectionCard(BuildContext context) => AppCard(
+    color: AppColors.softOcean,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.medication_outlined, color: AppColors.green),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                appText(
+                  'No inhaler found in your medications',
+                  'لا يوجد بخاخ ضمن أدويتك المختارة',
+                ),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Text(
+          appText(
+            'Choose your medications to see only the guide for your inhaler. You can also browse all guides below.',
+            'اختر أدويتك لعرض الدليل الخاص ببخاخك فقط. ويمكنك أيضاً تصفح جميع الأدلة أدناه.',
+          ),
+          style: TextStyle(height: 1.4),
+        ),
+        SizedBox(height: 12),
+        PrimaryButton(
+          text: appText('Choose my medications', 'اختيار أدويتي'),
+          icon: Icons.medication_outlined,
+          onPressed: () => context.push(
+            '/onboarding/medications?edit=true',
+            extra: <String>[],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _deviceCard(
+    BuildContext context,
+    InhalerDevice device, {
+    String? forMeds,
+  }) => Padding(
     padding: EdgeInsets.only(bottom: 12),
     child: AppCard(
       onTap: () => context.push('/learn/inhaler-technique/${device.id}'),
       child: Row(
         children: [
-          Icon(_categoryIcon(device.categoryId), color: AppColors.teal),
+          Icon(_categoryIcon(device.categoryId), color: AppColors.green),
           SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -114,6 +250,13 @@ class InhalerDeviceListScreen extends StatelessWidget {
                   appText(device.nameEn, device.nameAr),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
+                if (forMeds != null && forMeds.isNotEmpty) ...[
+                  SizedBox(height: 3),
+                  Text(
+                    appText('For: $forMeds', 'لـ: $forMeds'),
+                    style: TextStyle(fontSize: 12.5, color: AppColors.muted),
+                  ),
+                ],
                 SizedBox(height: 4),
                 Text(
                   device.quickBreath
@@ -212,7 +355,7 @@ class _InhalerDeviceDetailScreenState
   @override
   Widget build(BuildContext context) {
     final device =
-        inhalerDevices.where((d) => d.id == widget.deviceId).firstOrNull;
+        resolveInhalerDevice(widget.deviceId);
     final a = AppState.instance.arabic;
     if (device == null) {
       return PageFrame(
