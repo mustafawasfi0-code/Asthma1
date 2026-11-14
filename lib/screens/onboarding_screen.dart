@@ -10,7 +10,6 @@ import '../repositories/profile_repository.dart';
 import '../services/supabase_service.dart';
 import '../widgets/common.dart';
 import '../repositories/health_repository.dart'; // أو حسب المسار الخاص بالملف لديك
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 /// Single progress scale shared by every onboarding screen so the bar reads
 /// as one continuous journey instead of resetting between sections.
@@ -741,102 +740,44 @@ class MedicationInfoScreen extends StatelessWidget {
     );
   }
 }
-class MedicationHowToUseScreen extends StatefulWidget {
+class MedicationHowToUseScreen extends StatelessWidget {
   const MedicationHowToUseScreen({super.key, required this.index});
   final int index;
-
-  @override
-  State<MedicationHowToUseScreen> createState() =>
-      _MedicationHowToUseScreenState();
-}
-
-class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
-  YoutubePlayerController? _videoController;
-  String? _controllerForUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _setupController();
-  }
-
-  @override
-  void didUpdateWidget(covariant MedicationHowToUseScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.index != widget.index) {
-      _setupController();
-    }
-  }
-
-  void _setupController() {
-    final selected = OnboardingMedicationState.instance.selectedMedications;
-    if (widget.index < 0 || widget.index >= selected.length) return;
-
-    final url = selected[widget.index].videoUrl;
-
-    if (url == null || url.isEmpty) {
-      _videoController?.dispose();
-      _videoController = null;
-      _controllerForUrl = null;
-      return;
-    }
-
-    if (_controllerForUrl == url && _videoController != null) {
-      return; // already set up correctly, don't recreate
-    }
-
-    final id = YoutubePlayer.convertUrlToId(url);
-    _videoController?.dispose();
-    _videoController = id == null
-        ? null
-        : YoutubePlayerController(
-            initialVideoId: id,
-            flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
-          );
-    _controllerForUrl = url;
-  }
-
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final selected = OnboardingMedicationState.instance.selectedMedications;
     if (selected.isEmpty ||
-        widget.index < 0 ||
-        widget.index >= selected.length) {
+        index < 0 ||
+        index >= selected.length) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => context.go('/'),
       );
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final medication = selected[widget.index];
+    final medication = selected[index];
     final a = AppState.instance.arabic;
     final steps = a ? medication.stepsAr : medication.stepsEn;
-    final hasNext = widget.index + 1 < selected.length;
-    final controller = _videoController;
+    final hasNext = index + 1 < selected.length;
 
     return _OnboardingFrame(
       progress: _onboardingProgress(
         5,
-        fraction: (widget.index + 1) / selected.length,
+        fraction: (index + 1) / selected.length,
       ),
       icon: Icons.menu_book_outlined,
       title: appText('How to use', 'طريقة الاستخدام'),
       subtitle: appText(
-        'Watch the video and follow the steps to ensure effective treatment.',
-        'شاهد الفيديو واتبع الخطوات لضمان فعالية العلاج.',
+        'Follow the steps to ensure effective treatment.',
+        'اتبع الخطوات لضمان فعالية العلاج.',
       ),
       back: () => context.pop(),
       continueText: hasNext
           ? appText('Next Medication', 'الدواء التالي')
           : appText('Continue', 'استمرار'),
       continueAction: () => hasNext
-          ? context.go('/onboarding/medications/info/${widget.index + 1}')
+          ? context.go('/onboarding/medications/info/${index + 1}')
           : context.go('/'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -852,8 +793,8 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
               ),
               child: Text(
                 appText(
-                  'Medicine ${widget.index + 1} of ${selected.length}',
-                  'الدواء ${widget.index + 1} من ${selected.length}',
+                  'Medicine ${index + 1} of ${selected.length}',
+                  'الدواء ${index + 1} من ${selected.length}',
                 ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -864,20 +805,7 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
             ),
             const SizedBox(height: 14),
           ],
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: controller == null
-                  ? _videoPlaceholder()
-                  : YoutubePlayer(
-                      controller: controller,
-                      showVideoProgressIndicator: true,
-                    ),
-            ),
-          ),
           if (steps.isNotEmpty) ...[
-            const SizedBox(height: 20),
             Row(
               children: [
                 const Icon(Icons.check_circle,
@@ -956,26 +884,6 @@ class _MedicationHowToUseScreenState extends State<MedicationHowToUseScreen> {
       ),
     );
   }
-
-  Widget _videoPlaceholder() => Container(
-        color: const Color(0xFF000D0D),
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.play_circle_outline,
-                color: Colors.white54, size: 44),
-            const SizedBox(height: 8),
-            Text(
-              appText('Video unavailable', 'الفيديو غير متاح'),
-              style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
 }
 class EmergencyContactScreen extends StatefulWidget {
   const EmergencyContactScreen({super.key, this.onboarding = true});
