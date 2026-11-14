@@ -9,16 +9,12 @@ android {
     namespace = "com.asthmacare.asthma_care"
     compileSdk = 36
     buildToolsVersion = "35.0.0"
-     // ndkVersion = flutter.ndkVersion
+    // ndkVersion = flutter.ndkVersion
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true // <-- تمت الإضافة هنا
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -45,11 +41,17 @@ android {
     }
 }
 
+// <-- التعديل الحديث هنا بدلاً من kotlinOptions القديمة
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
 flutter {
     source = "../.."
 }
 
-// <-- تمت الإضافة هنا في نهاية الملف
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
