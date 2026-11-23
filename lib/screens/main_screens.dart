@@ -599,26 +599,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Directionality(
-                      textDirection: TextDirection.ltr,
-                      child: Text(
-                        '$temp°C',
-                        style: const TextStyle(
-                          color: AppColors.black,
-                          fontSize: 34,
-                          height: 1.1,
-                          fontWeight: FontWeight.w900,
+                    // Temperature with the weather condition right beside it.
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 4,
+                      children: [
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(
+                            '$temp°C',
+                            style: const TextStyle(
+                              color: AppColors.black,
+                              fontSize: 34,
+                              height: 1.1,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .8),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            weatherCodeLabel(weather.weatherCode, arabic),
+                            style: TextStyle(
+                              color: advice.fg,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      weatherCodeLabel(weather.weatherCode, arabic),
-                      style: TextStyle(
-                        color: advice.fg,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    const SizedBox(height: 2),
                     if (details.isNotEmpty)
                       Text(
                         details,

@@ -2,12 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_state.dart';
 import '../core/app_theme.dart';
+import '../core/arabic_terms.dart';
 import '../core/onboarding_medication_state.dart';
 import '../data/inhaler_devices.dart';
 import '../data/medication_inhaler_map.dart';
 import '../models/medication.dart';
 import '../repositories/onboarding_repository.dart';
 import '../widgets/common.dart';
+
+/// Which of the patient's medications each guide was opened for, so the guide
+/// can show the exact medication name (e.g. "Symbicort Turbuhaler") as its
+/// title. Filled by [InhalerDeviceListScreen].
+final Map<String, List<Medication>> _guideMedications = {};
+
+String _medicationName(Medication m) =>
+    AppState.instance.arabic ? pureArabic(m.nameAr) : m.nameEn;
+
+String _medicationNames(List<Medication> meds) =>
+    meds.map(_medicationName).join(appText(', ', '، '));
+
+/// Letters used for the P / C / S badges: Latin in English, Arabic initials in
+/// Arabic so no English letters appear in Arabic mode.
+String _badgeLetter(String latin) => appText(latin, switch (latin) {
+  'P' => 'ت',
+  'C' => 'ع',
+  _ => 'ر',
+});
 
 class InhalerDeviceListScreen extends StatefulWidget {
   const InhalerDeviceListScreen({super.key});
@@ -47,6 +67,9 @@ class _InhalerDeviceListScreenState extends State<InhalerDeviceListScreen> {
           (myDeviceMeds[device.id] ??= []).add(medication);
         }
       }
+      _guideMedications
+        ..clear()
+        ..addAll(myDeviceMeds);
     } catch (_) {
       // Falls back to the full list of guides below.
     } finally {
@@ -56,9 +79,8 @@ class _InhalerDeviceListScreenState extends State<InhalerDeviceListScreen> {
 
   bool get _personalized => myDevices.isNotEmpty;
 
-  String _medNames(String deviceId) => (myDeviceMeds[deviceId] ?? const [])
-      .map((m) => AppState.instance.arabic ? m.nameAr : m.nameEn)
-      .join(appText(', ', '، '));
+  String _medNames(String deviceId) =>
+      _medicationNames(myDeviceMeds[deviceId] ?? const []);
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +138,7 @@ class _InhalerDeviceListScreenState extends State<InhalerDeviceListScreen> {
                   child: Text(
                     appText(
                       'P = requires priming   C = has a dose counter   S = should be shaken before use',
-                      'P = يحتاج تركيب أولي   C = يحتوي عداد جرعات   S = يحتاج رجّ قبل الاستخدام',
+                      'ت = يحتاج تجهيز أولي   ع = يحتوي عداد جرعات   ر = يحتاج رجّ قبل الاستخدام',
                     ),
                     style: TextStyle(fontSize: 13),
                   ),
@@ -247,13 +269,15 @@ class _InhalerDeviceListScreenState extends State<InhalerDeviceListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  appText(device.nameEn, device.nameAr),
+                  forMeds != null && forMeds.isNotEmpty
+                      ? forMeds
+                      : appText(device.nameEn, device.nameAr),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 if (forMeds != null && forMeds.isNotEmpty) ...[
                   SizedBox(height: 3),
                   Text(
-                    appText('For: $forMeds', 'لـ: $forMeds'),
+                    appText(device.nameEn, device.nameAr),
                     style: TextStyle(fontSize: 12.5, color: AppColors.muted),
                   ),
                 ],
@@ -279,9 +303,9 @@ class _InhalerDeviceListScreenState extends State<InhalerDeviceListScreen> {
                 SizedBox(height: 6),
                 Row(
                   children: [
-                    if (device.requiresPriming) _badge('P'),
-                    if (device.hasDoseCounter) _badge('C'),
-                    if (device.requiresShaking) _badge('S'),
+                    if (device.requiresPriming) _badge(_badgeLetter('P')),
+                    if (device.hasDoseCounter) _badge(_badgeLetter('C')),
+                    if (device.requiresShaking) _badge(_badgeLetter('S')),
                   ],
                 ),
               ],
@@ -369,9 +393,15 @@ class _InhalerDeviceDetailScreenState
     final done = completedSteps.length;
     final percent = total == 0 ? 0 : ((done / total) * 100).round();
 
+    // Show the exact medication the patient chose (e.g. "Symbicort
+    // Turbuhaler"); the device name moves to the subtitle.
+    final meds = _guideMedications[device.id] ?? const <Medication>[];
+    final deviceName = appText(device.nameEn, device.nameAr);
+    final category = appText(device.categoryEn, device.categoryAr);
+
     return PageFrame(
-      title: appText(device.nameEn, device.nameAr),
-      subtitle: appText(device.categoryEn, device.categoryAr),
+      title: meds.isEmpty ? deviceName : _medicationNames(meds),
+      subtitle: meds.isEmpty ? category : '$deviceName  •  $category',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -412,14 +442,14 @@ class _InhalerDeviceDetailScreenState
               runSpacing: 8,
               children: [
                 if (device.requiresPriming)
-                  _tag(appText('Requires priming', 'يحتاج تركيب أولي (P)')),
+                  _tag(appText('Requires priming', 'يحتاج تجهيز أولي')),
                 if (device.hasDoseCounter)
                   _tag(
-                    appText('Has a dose counter', 'يحتوي عداد جرعات (C)'),
+                    appText('Has a dose counter', 'يحتوي عداد جرعات'),
                   ),
                 if (device.requiresShaking)
                   _tag(
-                    appText('Should be shaken', 'يحتاج رجّ قبل الاستخدام (S)'),
+                    appText('Should be shaken', 'يحتاج رجّ قبل الاستخدام'),
                   ),
               ],
             ),

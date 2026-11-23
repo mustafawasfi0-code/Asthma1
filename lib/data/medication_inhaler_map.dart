@@ -6,6 +6,7 @@
 //
 // To change which guide(s) a medication opens, edit [_medicationDevices] below
 // (use the device ids from inhaler_devices.dart).
+import '../core/arabic_terms.dart';
 import '../models/medication.dart';
 import 'inhaler_devices.dart';
 
@@ -39,16 +40,18 @@ InhalerDevice _deviceFromMedication(Medication m) {
   return _syntheticDevices[id] ??= InhalerDevice(
     id: id,
     nameEn: m.nameEn,
-    nameAr: m.nameAr,
+    nameAr: pureArabic(m.nameAr),
     categoryId: 'my_medication',
     categoryEn: m.descriptionEn,
-    categoryAr: m.descriptionAr,
+    categoryAr: pureArabic(m.descriptionAr),
     requiresPriming: false,
     hasDoseCounter: false,
     requiresShaking: false,
     quickBreath: m.stepsEn.any((s) => s.toLowerCase().contains('quickly')),
     stepsEn: m.stepsEn,
-    stepsAr: m.stepsAr.isEmpty ? m.stepsEn : m.stepsAr,
+    stepsAr: m.stepsAr.isEmpty
+        ? m.stepsEn
+        : [for (final step in m.stepsAr) pureArabic(step)],
   );
 }
 

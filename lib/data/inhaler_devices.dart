@@ -50,8 +50,8 @@ const inhalerGeneralTips = <InhalerTip>[
   InhalerTip(
     'All pMDIs should be shaken before each dose. Do not shake dry powder '
     'inhalers (DPIs), except Easyhaler which needs to be shaken before use.',
-    'يجب رجّ جميع أجهزة pMDI قبل كل جرعة. لا تُرجّ أجهزة البودرة الجافة '
-    '(DPI) باستثناء Easyhaler الذي يحتاج للرجّ قبل الاستخدام.',
+    'يجب رجّ جميع بخاخات الجرعات المقننة قبل كل جرعة. لا تُرجّ أجهزة البودرة '
+    'الجافة باستثناء إيزي هيلر الذي يحتاج للرجّ قبل الاستخدام.',
   ),
   InhalerTip(
     'For all types of inhalers, it is important to keep the chin tilted '
@@ -77,8 +77,8 @@ const inhalerGeneralTips = <InhalerTip>[
   InhalerTip(
     'Turbuhalers, Respimat and pMDI devices should be primed before '
     'they are used for the first time.',
-    'يجب تركيب (Priming) أجهزة Turbuhaler وRespimat وpMDI قبل استخدامها '
-    'لأول مرة.',
+    'يجب تجهيز أجهزة توربوهيلر وريسبيمات وبخاخات الجرعات المقننة قبل '
+    'استخدامها لأول مرة.',
   ),
   InhalerTip(
     'For inhalers with a dose counter, it is important to check there '
@@ -95,10 +95,10 @@ const inhalerGeneralTips = <InhalerTip>[
 const inhalerDevices = <InhalerDevice>[  InhalerDevice(
     id: 'pmdi-alone',
     nameEn: 'pMDI alone',
-    nameAr: 'بخاخ pMDI بمفرده',
+    nameAr: 'بخاخ الجرعات المقننة بمفرده',
     categoryId: 'pmdi_manual',
     categoryEn: 'Manually Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة اليدوي (pMDI)',
+    categoryAr: 'بخاخ الجرعات المقننة اليدوي',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -132,10 +132,10 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'pmdi-spacer',
     nameEn: 'pMDI and Spacer',
-    nameAr: 'بخاخ pMDI مع الحجرة الفاصلة (Spacer)',
+    nameAr: 'بخاخ الجرعات المقننة مع الحجرة الفاصلة',
     categoryId: 'pmdi_manual',
     categoryEn: 'Manually Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة اليدوي (pMDI)',
+    categoryAr: 'بخاخ الجرعات المقننة اليدوي',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -155,13 +155,13 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
       'Replace cap on inhaler',
     ],
     stepsAr: [
-      'جهّز الحجرة الفاصلة (Spacer)',
+      'جهّز الحجرة الفاصلة',
       'انزع غطاء البخاخ',
       'أمسك البخاخ بشكل عمودي ورجّه جيداً قبل إدخاله في الحجرة الفاصلة',
       'ضع القطعة الفموية بين أسنانك دون عض وأغلق شفتيك لتكوين إغلاق محكم',
       'ازفر بلطف داخل الحجرة الفاصلة حتى تشعر أن رئتيك فارغتان',
       'أمسك الحجرة الفاصلة بشكل أفقي واضغط بثبات على عبوة البخاخ مرة واحدة',
-      'نفَس واحد: استنشق ببطء وعمق واحبس نفسك لنحو 5-10 ثوانٍ أو أطول قدر الراحة؛ أخرج الحجرة الفاصلة من فمك أثناء حبس النفس. أو تنفّس عادي (Tidal breath)*: تنفس بشكل طبيعي شهيقاً وزفيراً لأربع مرات قبل إخراج الحجرة الفاصلة من فمك',
+      'نفَس واحد: استنشق ببطء وعمق واحبس نفسك لنحو 5-10 ثوانٍ أو أطول قدر الراحة؛ أخرج الحجرة الفاصلة من فمك أثناء حبس النفس. أو تنفّس هادئ عادي*: تنفس بشكل طبيعي شهيقاً وزفيراً لأربع مرات قبل إخراج الحجرة الفاصلة من فمك',
       'ازفر بلطف بعيداً عن البخاخ',
       'أخرج البخاخ من الحجرة الفاصلة',
       'إذا احتجت جرعة إضافية، كرّر الخطوات من 3 إلى 9',
@@ -170,15 +170,15 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
     noteEn:
         '* Tidal breathing is recommended for young children and during acute flare-ups.',
     noteAr:
-        '* التنفس العادي (Tidal breath) يُنصح به للأطفال الصغار وأثناء نوبات الربو الحادة.',
+        '* التنفس الهادئ العادي يُنصح به للأطفال الصغار وأثناء نوبات الربو الحادة.',
   ),
   InhalerDevice(
     id: 'pmdi-haleraid',
     nameEn: 'pMDI and Haleraid',
-    nameAr: 'بخاخ pMDI مع Haleraid',
+    nameAr: 'بخاخ الجرعات المقننة مع هاليريد',
     categoryId: 'pmdi_manual',
     categoryEn: 'Manually Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة اليدوي (pMDI)',
+    categoryAr: 'بخاخ الجرعات المقننة اليدوي',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -199,13 +199,13 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
       'Replace cap',
     ],
     stepsAr: [
-      'افتح جهاز الـHaleraid وضع البخاخ بداخله',
+      'افتح جهاز هاليريد وضع البخاخ بداخله',
       'اضغط البخاخ للداخل (بما يسمح لك بالعصر لاحقاً)',
       'انزع غطاء البخاخ',
       'أمسك البخاخ بشكل عمودي ورجّه جيداً',
       'ازفر ببطء ولطف بعيداً عن البخاخ حتى تشعر أن رئتيك فارغتان',
       'ضع القطعة الفموية بين أسنانك دون عض وأغلق شفتيك لتكوين إغلاق محكم',
-      'استنشق ببطء من فمك، وفي نفس الوقت اعصر الـHaleraid بثبات',
+      'استنشق ببطء من فمك، وفي نفس الوقت اعصر جهاز هاليريد بثبات',
       'استمر بالاستنشاق ببطء وعمق واحبس نفسك لنحو 5-10 ثوانٍ أو أطول قدر الراحة',
       'أثناء حبس النفس، أخرج البخاخ من فمك',
       'ازفر بلطف بعيداً عن البخاخ',
@@ -218,10 +218,10 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'autohaler',
     nameEn: 'Autohaler',
-    nameAr: 'Autohaler',
+    nameAr: 'أوتوهيلر',
     categoryId: 'pmdi_breath',
     categoryEn: 'Breath-Actuated pMDI',
-    categoryAr: 'بخاخ pMDI يُفعَّل بالتنفس',
+    categoryAr: 'بخاخ الجرعات المقننة المُفعَّل بالتنفس',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -244,10 +244,10 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
     stepsAr: [
       'انزع الغطاء',
       'أمسك البخاخ بشكل عمودي ورجّه جيداً',
-      'ادفع الذراع (Lever) للأعلى',
+      'ادفع الذراع للأعلى',
       'ازفر ببطء ولطف بعيداً عن البخاخ حتى تشعر أن رئتيك فارغتان',
       'ضع القطعة الفموية بين أسنانك دون عض وأغلق شفتيك لتكوين إغلاق محكم',
-      'استنشق ببطء وعمق؛ استمر بالاستنشاق بعد سماع صوت النقرة (Click)',
+      'استنشق ببطء وعمق؛ استمر بالاستنشاق بعد سماع صوت النقرة',
       'احبس نفسك لنحو 5-10 ثوانٍ أو أطول قدر الراحة',
       'أثناء حبس النفس، أخرج البخاخ من فمك',
       'ازفر بلطف بعيداً عن البخاخ',
@@ -261,10 +261,10 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'respimat',
     nameEn: 'Respimat',
-    nameAr: 'Respimat',
+    nameAr: 'ريسبيمات',
     categoryId: 'smi',
     categoryEn: 'Soft Mist Inhaler (SMI)',
-    categoryAr: 'بخاخ الرذاذ الناعم (SMI)',
+    categoryAr: 'بخاخ الرذاذ الناعم',
     requiresPriming: true,
     hasDoseCounter: true,
     requiresShaking: false,
@@ -296,19 +296,19 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
       'أثناء حبس النفس، أخرج البخاخ من فمك',
       'ازفر بلطف بعيداً عن البخاخ',
       'أغلق الغطاء بنقرة',
-      'كرّر من الخطوة 1 للحصول على الجرعة الكاملة (نفسان هما الجرعة المعتادة للأدوية المستخدمة مع Respimat)',
+      'كرّر من الخطوة 1 للحصول على الجرعة الكاملة (نفسان هما الجرعة المعتادة للأدوية المستخدمة مع ريسبيمات)',
     ],
     noteEn:
         'Before using for the first time, ensure the cartridge is loaded into the device.',
     noteAr:
-        'قبل الاستخدام لأول مرة، تأكد من تركيب الخرطوشة (Cartridge) داخل الجهاز.',
+        'قبل الاستخدام لأول مرة، تأكد من تركيب الخرطوشة داخل الجهاز.',
   ),
 
   // Single dose DPI - blister
   InhalerDevice(
     id: 'accuhaler',
     nameEn: 'Accuhaler',
-    nameAr: 'Accuhaler',
+    nameAr: 'أكيوهيلر',
     categoryId: 'dpi_blister',
     categoryEn: 'Single Dose DPI - Blister',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (شريط)',
@@ -345,7 +345,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'ciphaler',
     nameEn: 'Ciphaler',
-    nameAr: 'Ciphaler',
+    nameAr: 'سيفالر',
     categoryId: 'dpi_blister',
     categoryEn: 'Single Dose DPI - Blister',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (شريط)',
@@ -382,7 +382,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'ellipta',
     nameEn: 'Ellipta',
-    nameAr: 'Ellipta',
+    nameAr: 'إليبتا',
     categoryId: 'dpi_blister',
     categoryEn: 'Single Dose DPI - Blister',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (شريط)',
@@ -423,7 +423,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'easyhaler',
     nameEn: 'Easyhaler',
-    nameAr: 'Easyhaler',
+    nameAr: 'إيزي هيلر',
     categoryId: 'dpi_reservoir',
     categoryEn: 'Multidose DPI - Reservoir',
     categoryAr: 'بخاخ بودرة جافة متعدد الجرعات (خزان)',
@@ -464,7 +464,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'genuair',
     nameEn: 'Genuair',
-    nameAr: 'Genuair',
+    nameAr: 'جينوير',
     categoryId: 'dpi_reservoir',
     categoryEn: 'Multidose DPI - Reservoir',
     categoryAr: 'بخاخ بودرة جافة متعدد الجرعات (خزان)',
@@ -507,7 +507,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'spiromax',
     nameEn: 'Spiromax',
-    nameAr: 'Spiromax',
+    nameAr: 'سبيرومكس',
     categoryId: 'dpi_reservoir',
     categoryEn: 'Multidose DPI - Reservoir',
     categoryAr: 'بخاخ بودرة جافة متعدد الجرعات (خزان)',
@@ -544,7 +544,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'turbuhaler',
     nameEn: 'Turbuhaler',
-    nameAr: 'Turbuhaler',
+    nameAr: 'توربوهيلر',
     categoryId: 'dpi_reservoir',
     categoryEn: 'Multidose DPI - Reservoir',
     categoryAr: 'بخاخ بودرة جافة متعدد الجرعات (خزان)',
@@ -583,7 +583,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'breezhaler',
     nameEn: 'Breezhaler',
-    nameAr: 'Breezhaler',
+    nameAr: 'بريزهيلر',
     categoryId: 'dpi_capsule',
     categoryEn: 'Single Dose DPI - Capsule',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (كبسولة)',
@@ -630,7 +630,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'handihaler',
     nameEn: 'Handihaler',
-    nameAr: 'Handihaler',
+    nameAr: 'هاندي هيلر',
     categoryId: 'dpi_capsule',
     categoryEn: 'Single Dose DPI - Capsule',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (كبسولة)',
@@ -675,7 +675,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'lupinhaler',
     nameEn: 'LupinHaler',
-    nameAr: 'LupinHaler',
+    nameAr: 'لوبين هيلر',
     categoryId: 'dpi_capsule',
     categoryEn: 'Single Dose DPI - Capsule',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (كبسولة)',
@@ -720,7 +720,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'zonda',
     nameEn: 'Zonda',
-    nameAr: 'Zonda',
+    nameAr: 'زوندا',
     categoryId: 'dpi_capsule',
     categoryEn: 'Single Dose DPI - Capsule',
     categoryAr: 'بخاخ بودرة جافة أحادي الجرعة (كبسولة)',
