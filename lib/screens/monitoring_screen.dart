@@ -6,7 +6,6 @@ import '../core/app_theme.dart';
 import '../core/localized_values.dart';
 import '../models/monitoring.dart';
 import '../repositories/health_repository.dart';
-import '../repositories/profile_repository.dart';
 import '../widgets/common.dart';
 
 class MonitoringScreen extends StatefulWidget {
@@ -1768,92 +1767,11 @@ class PeakFlowResultDialog extends StatefulWidget {
 
 class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
   late PeakFlowAssessment assessment;
-  bool savingPersonalBest = false;
 
   @override
   void initState() {
     super.initState();
     assessment = widget.assessment;
-  }
-  
-  Future<void> _enterPersonalBest() async {
-    final controller = TextEditingController();
-    String? validationError;
-    final value = await showDialog<int>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(appText('Enter personal best', 'أدخل أفضل قراءة شخصية')),
-          content: TextField(
-            key: const ValueKey('dialog_personal_best_field'),
-            controller: controller,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: appText('Personal best', 'أفضل قراءة شخصية'),
-              suffixText: 'L/min',
-              errorText: validationError,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(appText('Cancel', 'إلغاء')),
-            ),
-            FilledButton(
-              onPressed: () {
-                final parsed = int.tryParse(controller.text.trim());
-                if (parsed == null || parsed < 1 || parsed > 900) {
-                  setDialogState(
-                    () => validationError = appText(
-                      'Enter a number from 1 to 900',
-                      'أدخل رقماً من 1 إلى 900',
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(dialogContext, parsed);
-              },
-              child: Text(appText('Save', 'حفظ')),
-            ),
-          ],
-        ),
-      ),
-    );
-    controller.dispose();
-    if (value == null || !mounted) return;
-    setState(() => savingPersonalBest = true);
-    try {
-      await ProfileRepository().setPersonalBest(value);
-      if (!mounted) return;
-      setState(() {
-        assessment = PeakFlowAssessment.calculate(assessment.readings, value);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            appText(
-              'Personal best saved and zone recalculated.',
-              'تم حفظ أفضل قراءة وإعادة حساب المنطقة.',
-            ),
-          ),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            appText(
-              'Could not save personal best.',
-              'تعذر حفظ أفضل قراءة شخصية.',
-            ),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => savingPersonalBest = false);
-    }
   }
 
   @override
@@ -1893,8 +1811,8 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
         '🚨 المنطقة الحمراء - خطر طبي',
       ),
       PeakFlowZone.unavailable => appText(
-        'Personal best required',
-        'أفضل رقم شخصي مطلوب',
+        'Predicted PEF unavailable',
+        'ذروة التدفق المتوقعة غير متاحة',
       ),
     };
     final message = switch (zone) {
@@ -1910,8 +1828,8 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
         'أعراض حادة! تحتاج إلى عناية طبية فورية.',
       ),
       PeakFlowZone.unavailable => appText(
-        'Set your personal best to calculate your peak flow zone.',
-        'أدخل أفضل رقم شخصي لحساب منطقة ذروة التدفق.',
+        'Complete your height, age and sex in your profile to calculate your peak flow zone.',
+        'أكمل الطول والعمر والجنس في ملفك الشخصي لحساب منطقة ذروة التدفق.',
       ),
     };
     final action = switch (zone) {
@@ -1928,8 +1846,8 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
         'استخدم البخاخ الاسعافي الآن. اتصل بطبيبك أو اذهب لغرفة الطوارئ فوراً. لا تتأخر!',
       ),
       PeakFlowZone.unavailable => appText(
-        'Open Profile and enter a valid personal best.',
-        'افتح الملف الشخصي وأدخل أفضل رقم شخصي صحيح.',
+        'Open Profile and check your height, age and sex.',
+        'افتح الملف الشخصي وتحقق من الطول والعمر والجنس.',
       ),
     };
 
@@ -2096,8 +2014,8 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                           ),
                           child: Text(
                             appText(
-                              '$percentage% of personal best',
-                              '$percentage% من أفضل رقم',
+                              '$percentage% of predicted PEF',
+                              '$percentage% من ذروة التدفق المتوقعة',
                             ),
                             style: TextStyle(
                               color: color,
@@ -2108,7 +2026,7 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                         ),
                       const SizedBox(height: 3),
                       Text(
-                        '${appText('Personal best', 'أفضل رقم شخصي')}: '
+                        '${appText('Predicted PEF', 'ذروة التدفق المتوقعة')}: '
                         '${assessment.personalBest ?? appText('Not set', 'غير محدد')} L/min',
                         style: const TextStyle(
                           color: Color(0xFF606873),
@@ -2260,43 +2178,6 @@ class _PeakFlowResultDialogState extends State<PeakFlowResultDialog> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                if (zone == PeakFlowZone.unavailable) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: FilledButton.icon(
-                      key: const ValueKey('set_personal_best_from_pef'),
-                      onPressed: savingPersonalBest ? null : _enterPersonalBest,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: color,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      icon: savingPersonalBest
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.edit_outlined),
-                      label: Text(
-                        appText(
-                          'Enter personal best here',
-                          'أدخل أفضل قراءة من هنا',
-                        ),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 9),
-                ],
                 SizedBox(
                   width: double.infinity,
                   height: 54,

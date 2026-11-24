@@ -20,7 +20,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final repository = ProfileRepository();
   final doctorName = TextEditingController();
   final doctorPhone = TextEditingController();
-  final personalBest = TextEditingController();
   Profile? profile;
   bool loading = true, saving = false;
   String? error;
@@ -37,7 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     doctorName.dispose();
     doctorPhone.dispose();
-    personalBest.dispose();
     super.dispose();
   }
 
@@ -49,7 +47,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         lastPresentedDoctorName = localizedPersonName(originalDoctorName);
         doctorName.text = lastPresentedDoctorName;
         doctorPhone.text = value.doctorPhone ?? '';
-        personalBest.text = value.personalBest?.toString() ?? '';
       }
       if (mounted) setState(() => profile = value);
     } catch (_) {
@@ -97,14 +94,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       error = null;
     });
     try {
-      final personalBestValue = personalBest.text.trim().isEmpty
-          ? null
-          : int.tryParse(personalBest.text.trim());
-      if (personalBestValue == null && personalBest.text.trim().isNotEmpty ||
-          personalBestValue != null &&
-              (personalBestValue < 1 || personalBestValue > 1000)) {
-        throw const FormatException('Invalid personal best');
-      }
       final updated = Profile(
         id: current.id,
         name: current.name,
@@ -112,10 +101,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         age: current.age,
         sex: current.sex,
         heightCm: current.heightCm,
-        personalBest: personalBestValue,
-        // Without this, saving the profile (e.g. just to update Personal
-        // Best) would silently wipe out any triggers the patient has
-        // confirmed, since Profile() now defaults triggers to [].
+        personalBest: current.personalBest, // no longer edited in the app
+        // Without this, saving the profile would silently wipe out any
+        // triggers the patient has confirmed, since Profile() now defaults
+        // triggers to [].
         triggers: current.triggers,
         doctorName: doctorName.text.trim().isEmpty
             ? null
@@ -188,25 +177,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               AppCard(
                 child: Column(
                   children: [
-                    ListTile(
-                      leading: const Icon(Icons.speed, color: Colors.green),
-                      title: Text(appText('Personal Best', 'أفضل قراءة شخصية')),
-                      trailing: SizedBox(
-                        width: 115,
-                        child: TextField(
-                          key: const ValueKey('personal_best_field'),
-                          controller: personalBest,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          decoration: InputDecoration(
-                            hintText: appText('Enter value', 'أدخل الرقم'),
-                            suffixText: 'L/min',
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Divider(),
                     ListTile(
                       leading: const Icon(
                         Icons.analytics_outlined,

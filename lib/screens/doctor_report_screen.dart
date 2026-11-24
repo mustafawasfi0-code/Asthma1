@@ -36,6 +36,18 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
   List<String> _values(dynamic value) =>
       value is List ? value.map((e) => e.toString()).toList() : const [];
 
+  /// Predicted PEF from height, age and sex (same formula as Profile).
+  int? _predictedPef(Map<String, dynamic>? profile) {
+    final height = (profile?['height_cm'] as num?)?.toDouble();
+    final age = (profile?['age'] as num?)?.toInt();
+    final sex = profile?['sex'];
+    if (height == null || age == null || sex == null) return null;
+    final value = sex == 'Female'
+        ? height * 3.72 + age * 2.24 - 232
+        : height * 5.48 - age * 1.93 - 367;
+    return value.clamp(1, 1000).round();
+  }
+
   String _measurement(dynamic value, String englishUnit, String arabicUnit) {
     if (value == null || value.toString().trim().isEmpty) return _text(value);
     return ' ';
@@ -197,8 +209,8 @@ class _DoctorReportScreenState extends State<DoctorReportScreen> {
           _measurement(profile?['height_cm'], 'cm', 'سم'),
         ),
         _detail(
-          appText('Personal best PEF', 'أفضل قراءة PEF'),
-          _measurement(profile?['personal_best_pef'], 'L/min', 'لتر/دقيقة'),
+          appText('Predicted PEF', 'ذروة التدفق المتوقعة'),
+          _measurement(_predictedPef(profile), 'L/min', 'لتر/دقيقة'),
         ),
         _detail(
           appText('Doctor', 'الطبيب'),

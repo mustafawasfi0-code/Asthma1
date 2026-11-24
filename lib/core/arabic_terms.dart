@@ -6,8 +6,8 @@
 // Add new terms to [_terms] when needed.
 
 const List<(String, String)> _terms = [
-  ('بخاخ pMDI', 'بخاخ الجرعات المقننة'),
-  ('pMDI', 'بخاخ الجرعات المقننة'),
+  ('بخاخ pMDI', 'بخاخ الجرعات (المحددة)'),
+  ('pMDI', 'بخاخ الجرعات (المحددة)'),
   ('Elpenhaler', 'إلبنهيلر'),
   ('Easyhaler', 'إيزي هيلر'),
   ('Turbuhaler', 'توربوهيلر'),

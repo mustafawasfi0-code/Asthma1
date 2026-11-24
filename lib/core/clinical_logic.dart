@@ -39,8 +39,8 @@ bool isGeneralSymptom(String symptom) => !isDangerSymptom(symptom);
 /// looks fine. This overriding behavior is intentional (matches GINA) —
 /// it's the first thing to check if a zone result ever looks wrong.
 ///
-/// [pefPercent] must already be resolved against [effectivePersonalBest] —
-/// this function never falls back to a predicted value itself.
+/// [pefPercent] must already be resolved against [effectivePersonalBest]
+/// (the Predicted PEF).
 PeakFlowZone computeZone({
   required Iterable<String> symptoms,
   required double pefPercent,
@@ -177,15 +177,12 @@ int predictedPef({
 }
 
 /// Diagram 7: THE only place any calculation should read the PEF baseline
-/// from. Never read `profile.personalBest` or a hand-computed predicted PEF
-/// directly anywhere else — that bypasses this fallback and diagrams 1, 3,
-/// and 4 will disagree with each other.
-int effectivePersonalBest(Profile profile) {
-  final set = profile.personalBest;
-  if (set != null) return set;
-  return predictedPef(
-    heightCm: profile.heightCm,
-    age: profile.age,
-    sex: profile.sex,
-  );
-}
+/// from. The baseline is always the patient's Predicted PEF (from height, age
+/// and sex) -- the app no longer asks for a separate "personal best", so any
+/// stored value is ignored. Never hand-compute the baseline anywhere else, or
+/// diagrams 1, 3, and 4 will disagree with each other.
+int effectivePersonalBest(Profile profile) => predictedPef(
+  heightCm: profile.heightCm,
+  age: profile.age,
+  sex: profile.sex,
+);

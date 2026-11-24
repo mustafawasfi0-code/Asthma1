@@ -25,14 +25,27 @@ class HealthRepository {
     });
   }
 
+  /// The PEF baseline every zone calculation uses: the patient's Predicted PEF,
+  /// calculated from height, age and sex (same formula as Profile / onboarding).
+  /// Null only while no valid profile exists yet.
   Future<int?> personalBest() async {
     final session = _session();
     final row = await session.client
         .from('profiles')
-        .select('personal_best_pef')
+        .select('height_cm, age, sex')
         .eq('id', session.user.id)
         .maybeSingle();
-    return (row?['personal_best_pef'] as num?)?.toInt();
+    if (row == null) return null;
+    final height = (row['height_cm'] as num?)?.toDouble();
+    final age = (row['age'] as num?)?.toInt();
+    final sex = row['sex'] as String?;
+    if (height == null || height < 50 || age == null || age < 1 || sex == null) {
+      return null;
+    }
+    final value = sex == 'Female'
+        ? height * 3.72 + age * 2.24 - 232
+        : height * 5.48 - age * 1.93 - 367;
+    return value.clamp(1, 1000).round();
   }
 
   Future<PeakFlowAssessment> addPeakFlowSession(List<int> values) async {
@@ -170,7 +183,7 @@ class HealthRepository {
       session.client
           .from('profiles')
           .select(
-            'name, city, age, sex, height_cm, personal_best_pef, doctor_name, doctor_phone, updated_at',
+            'name, city, age, sex, height_cm, doctor_name, doctor_phone, updated_at',
           )
           .eq('id', session.user.id)
           .maybeSingle(),

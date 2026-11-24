@@ -50,7 +50,7 @@ const inhalerGeneralTips = <InhalerTip>[
   InhalerTip(
     'All pMDIs should be shaken before each dose. Do not shake dry powder '
     'inhalers (DPIs), except Easyhaler which needs to be shaken before use.',
-    'يجب رجّ جميع بخاخات الجرعات المقننة قبل كل جرعة. لا تُرجّ أجهزة البودرة '
+    'يجب رجّ جميع بخاخات الجرعات (المحددة) قبل كل جرعة. لا تُرجّ أجهزة البودرة '
     'الجافة باستثناء إيزي هيلر الذي يحتاج للرجّ قبل الاستخدام.',
   ),
   InhalerTip(
@@ -77,7 +77,7 @@ const inhalerGeneralTips = <InhalerTip>[
   InhalerTip(
     'Turbuhalers, Respimat and pMDI devices should be primed before '
     'they are used for the first time.',
-    'يجب تجهيز أجهزة توربوهيلر وريسبيمات وبخاخات الجرعات المقننة قبل '
+    'يجب تجهيز أجهزة توربوهيلر وريسبيمات وبخاخات الجرعات (المحددة) قبل '
     'استخدامها لأول مرة.',
   ),
   InhalerTip(
@@ -95,10 +95,10 @@ const inhalerGeneralTips = <InhalerTip>[
 const inhalerDevices = <InhalerDevice>[  InhalerDevice(
     id: 'pmdi-alone',
     nameEn: 'pMDI alone',
-    nameAr: 'بخاخ الجرعات المقننة بمفرده',
+    nameAr: 'بخاخ الجرعات (المحددة) بمفرده',
     categoryId: 'pmdi_manual',
     categoryEn: 'Manually Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة اليدوي',
+    categoryAr: 'بخاخ الجرعات (المحددة) اليدوي',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -132,10 +132,10 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'pmdi-spacer',
     nameEn: 'pMDI and Spacer',
-    nameAr: 'بخاخ الجرعات المقننة مع الحجرة الفاصلة',
+    nameAr: 'بخاخ الجرعات (المحددة) مع الحجرة الفاصلة',
     categoryId: 'pmdi_manual',
     categoryEn: 'Manually Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة اليدوي',
+    categoryAr: 'بخاخ الجرعات (المحددة) اليدوي',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -175,10 +175,10 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
   InhalerDevice(
     id: 'pmdi-haleraid',
     nameEn: 'pMDI and Haleraid',
-    nameAr: 'بخاخ الجرعات المقننة مع هاليريد',
+    nameAr: 'بخاخ الجرعات (المحددة) مع هاليريد',
     categoryId: 'pmdi_manual',
     categoryEn: 'Manually Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة اليدوي',
+    categoryAr: 'بخاخ الجرعات (المحددة) اليدوي',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,
@@ -221,7 +221,7 @@ const inhalerDevices = <InhalerDevice>[  InhalerDevice(
     nameAr: 'أوتوهيلر',
     categoryId: 'pmdi_breath',
     categoryEn: 'Breath-Actuated pMDI',
-    categoryAr: 'بخاخ الجرعات المقننة المُفعَّل بالتنفس',
+    categoryAr: 'بخاخ الجرعات (المحددة) المُفعَّل بالتنفس',
     requiresPriming: true,
     hasDoseCounter: false,
     requiresShaking: true,

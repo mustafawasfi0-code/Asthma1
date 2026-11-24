@@ -105,22 +105,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return value;
   }
 
-  int? _estimatedPef() {
-    final parsedHeight = double.tryParse(height.text.trim());
-    final normalizedAge = _normalizedAge();
-    if (parsedHeight == null ||
-        parsedHeight < 50 ||
-        parsedHeight > 250 ||
-        normalizedAge == null ||
-        sex == null) {
-      return null;
-    }
-    final value = sex == 'Female'
-        ? parsedHeight * 3.72 + normalizedAge * 2.24 - 232
-        : parsedHeight * 5.48 - normalizedAge * 1.93 - 367;
-    return value.clamp(1, 1000).round();
-  }
-
   Future<void> next() async {
     final a = AppState.instance.arabic;
     setState(() => error = null);
@@ -162,7 +146,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           age: normalizedAge!,
           sex: sex!,
           heightCm: parsedHeight!,
-          personalBest: _estimatedPef(),
         ),
       );
       if (mounted) context.push('/onboarding/triggers');
@@ -1522,12 +1505,11 @@ class _PefResultScreenState extends State<PefResultScreen> {
     try {
       final profile = await ProfileRepository().getCurrent();
       if (profile != null) {
-        pef = profile.personalBest ??
-            (profile.sex == 'Female'
-                    ? profile.heightCm * 3.72 + profile.age * 2.24 - 232
-                    : profile.heightCm * 5.48 - profile.age * 1.93 - 367)
-                .clamp(1, 1000)
-                .round();
+        pef = (profile.sex == 'Female'
+                ? profile.heightCm * 3.72 + profile.age * 2.24 - 232
+                : profile.heightCm * 5.48 - profile.age * 1.93 - 367)
+            .clamp(1, 1000)
+            .round();
       }
     } catch (_) {
       // Falls back to the '--' placeholder below.
@@ -1580,8 +1562,8 @@ class _PefResultScreenState extends State<PefResultScreen> {
                 AppCard(
                   child: Text(
                     appText(
-                      'This is only a rough estimate based on height, age and sex. Your doctor should set your actual "personal best" by tracking your readings daily for 2-3 weeks while your condition is stable.',
-                      'هذا رقم تقديري تقريبي فقط بناءً على الطول والعمر والجنس. يجب أن يحدد طبيبك "أفضل قياس شخصي" فعلي عبر متابعة القياس يومياً لمدة 2-3 أسابيع أثناء استقرار حالتك.',
+                      'This is an estimate based on your height, age and sex. It is used to work out your peak flow zones. Follow your doctor\'s advice about your peak flow targets.',
+                      'هذا رقم تقديري بناءً على طولك وعمرك وجنسك، ويُستخدم لحساب مناطق ذروة التدفق. اتبع نصيحة طبيبك بخصوص أهدافك في قياس ذروة التدفق.',
                     ),
                     style: const TextStyle(height: 1.5),
                   ),
